@@ -58,6 +58,7 @@ export default function RewardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<RewardCustomer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     fetchRewards();
@@ -217,13 +218,6 @@ We can't wait to see you again 😊`;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rewards Management</h1>
-        <p className="text-gray-600">
-          Track customer rewards by category with visual progress indicators
-        </p>
-      </div>
-
       {/* Error Display */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -254,7 +248,21 @@ We can't wait to see you again 😊`;
       {/* Stats Cards */}
       {!loading && !error && (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
+          {/* Stats Cards Header */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">Rewards Statistics</h2>
+            <Button
+              variant="outline"
+              onClick={() => setShowStats(!showStats)}
+              className="flex items-center gap-2"
+            >
+              {showStats ? "Hide Stats" : "Show Stats"}
+            </Button>
+          </div>
+
+          {/* Stats Cards */}
+          {showStats && (
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-purple-800">
@@ -315,6 +323,7 @@ We can't wait to see you again 😊`;
               </CardContent>
             </Card>
           </div>
+          )}
 
           {/* All Customers with Category Rewards */}
           <div className="space-y-4">

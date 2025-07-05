@@ -31,12 +31,21 @@ export async function GET() {
       return ordersAfterLastReward >= 5 && ordersAfterLastReward !== 0
     }).length
 
-    // Get recent customers (last 5)
-    const recentCustomers = customers.slice(0, 5).map((customer) => ({
-      name: customer.name,
-      phone: customer.phone,
-      totalOrders: customer.totalOrders,
-    }))
+    // Get recent customers (last 5) with drinks until reward calculation
+    const recentCustomers = customers.slice(0, 5).map((customer) => {
+      // Calculate drinks until next reward
+      const paidDrinks = customer.orders ? customer.orders.filter(order => !order.isReward).length : 0
+      const effectivePaidDrinks = paidDrinks - (customer.rewardsEarned * 5)
+      const progressTowardReward = effectivePaidDrinks % 5
+      const drinksUntilReward = progressTowardReward === 0 && effectivePaidDrinks > 0 ? 0 : 5 - progressTowardReward
+      
+      return {
+        name: customer.name,
+        phone: customer.phone,
+        totalOrders: customer.totalOrders,
+        drinksUntilReward: drinksUntilReward
+      }
+    })
 
     return NextResponse.json({
       totalCustomers,

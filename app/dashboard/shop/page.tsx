@@ -244,68 +244,36 @@ export default function ShopPage() {
           <h1 className="text-2xl font-bold text-gray-900">Shop</h1>
           <p className="text-gray-600">Browse and purchase menu items</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleCheckout} disabled={cart.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
-            Checkout ({getTotalItems()})
-          </Button>
-        </div>
       </div>
 
       {/* Filters Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters & Search</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      <div className="flex gap-4 items-center">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-            {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Sort By */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Name (A-Z)</SelectItem>
-                <SelectItem value="price-low">Price (Low to High)</SelectItem>
-                <SelectItem value="price-high">Price (High to Low)</SelectItem>
-                <SelectItem value="category">Category</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Results Summary */}
-          <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredItems.length} of {menuItems.length} items
-            {searchTerm && ` for "${searchTerm}"`}
-            {selectedCategory !== "all" && ` in ${selectedCategory}`}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Category Filter */}
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* No Results Message */}
       {filteredItems.length === 0 && menuItems.length > 0 && (
@@ -388,7 +356,7 @@ export default function ShopPage() {
             <Badge variant="secondary">{groupedItems[category]?.length || 0} items</Badge>
           </div>
 
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {groupedItems[category]?.map((item) => {
               const quantity = getItemQuantity(item._id)
               const isDisabled = !item.isActive
@@ -396,7 +364,7 @@ export default function ShopPage() {
               return (
                 <Card 
                   key={item._id} 
-                  className={`overflow-hidden transition-all duration-200 group ${
+                  className={`flex-shrink-0 w-48 overflow-hidden transition-all duration-200 group ${
                     isDisabled 
                       ? 'opacity-50 grayscale cursor-not-allowed' 
                       : 'hover:shadow-lg'
@@ -561,6 +529,20 @@ export default function ShopPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Fixed Checkout Button */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9999]">
+          <Button 
+            onClick={handleCheckout} 
+            className="bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200"
+            size="lg"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Checkout ({getTotalItems()})
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
