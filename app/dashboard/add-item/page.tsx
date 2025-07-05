@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const categories = ["Mojito", "Ice Cream", "Milkshake", "Waffle"];
+const categories = ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi"];
 
 export default function AddItemPage() {
   const router = useRouter();

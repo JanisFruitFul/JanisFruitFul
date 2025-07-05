@@ -1,7 +1,7 @@
 // Configuration for API endpoints
 export const config = {
   // Use environment variable for API base URL, fallback to localhost for development
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5050',
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001',
   
   // Environment detection
   isDevelopment: process.env.NODE_ENV === 'development',

@@ -22,58 +22,78 @@ export async function GET() {
 
     const customers = await Customer.find({})
 
-    // Process customers for reward status (new logic: every 5 paid drinks = 1 free)
+    // Process customers for reward status with per-category tracking
     const rewardCustomers = customers.map((customer) => {
-      // Calculate paid drinks (excluding free rewards)
-      const paidDrinks = customer.orders.filter((order: any) => !order.isReward).length
-      
-      // Calculate effective paid drinks (subtract claimed rewards)
-      // Each claimed reward "consumes" 5 paid drinks
-      const effectivePaidDrinks = paidDrinks - (customer.rewardsEarned * 5)
-      
-      // Calculate progress toward next reward (every 5 paid drinks = 1 free)
-      const progressTowardReward = effectivePaidDrinks % 5
-      const drinksUntilReward = progressTowardReward === 0 && effectivePaidDrinks > 0 ? 0 : 5 - progressTowardReward
-      
-      // Determine status
-      let status: "earned" | "upcoming" | "progress" | "ready"
-      if (effectivePaidDrinks <= 0) {
-        status = "progress"
-      } else if (progressTowardReward === 0 && effectivePaidDrinks > 0) {
-        // Show "ready" when they have exactly 5 effective paid drinks (or multiples of 5)
-        status = "ready" // Ready to claim reward
-      } else if (progressTowardReward >= 4) {
-        status = "upcoming"
-      } else {
-        status = "progress"
+      const categoryProgress = [];
+
+      // Process each category in the rewards map
+      if (customer.rewards && customer.rewards.size > 0) {
+        for (const [category, data] of customer.rewards.entries()) {
+          const pendingRewards = data.earned - data.claimed;
+          const progress = data.paid % 5;
+          const drinksUntilReward = progress === 0 && data.paid > 0 ? 0 : 5 - progress;
+          
+          let status: "earned" | "upcoming" | "progress" | "ready";
+          if (data.paid <= 0) {
+            status = "progress";
+          } else if (pendingRewards > 0) {
+            status = "ready";
+          } else if (progress >= 4) {
+            status = "upcoming";
+          } else {
+            status = "progress";
+          }
+
+          categoryProgress.push({
+            category,
+            paid: data.paid,
+            earned: data.earned,
+            claimed: data.claimed,
+            pending: pendingRewards,
+            progress,
+            drinksUntilReward,
+            status,
+          });
+        }
       }
+
+      // Calculate overall stats for backward compatibility
+      const totalPaidDrinks = customer.orders.filter((order: any) => !order.isReward).length;
+      const totalRewardsEarned = customer.rewardsEarned || 0;
 
       return {
         _id: customer._id,
         name: customer.name,
         phone: customer.phone,
         totalOrders: customer.totalOrders,
-        paidDrinks: paidDrinks,
-        rewardsEarned: customer.rewardsEarned,
-        status,
-        drinksUntilReward,
-        progressTowardReward,
-      }
-    })
+        totalPaidDrinks,
+        totalRewardsEarned,
+        rewards: categoryProgress,
+      };
+    });
 
-    // Calculate stats
-    const totalRewardsGiven = customers.reduce((sum, customer) => sum + customer.rewardsEarned, 0)
-    const customersWithRewards = customers.filter((customer) => customer.rewardsEarned > 0).length
-    const upcomingRewards = rewardCustomers.filter((customer) => customer.status === "upcoming").length
-    const readyRewards = rewardCustomers.filter((customer) => customer.status === "ready").length
+    // Calculate overall stats
+    const totalRewardsGiven = customers.reduce((sum, customer) => sum + (customer.rewardsEarned || 0), 0);
+    const customersWithRewards = customers.filter((customer) => (customer.rewardsEarned || 0) > 0).length;
+    
+    // Count ready and upcoming rewards across all categories
+    let totalReadyRewards = 0;
+    let totalUpcomingRewards = 0;
+    
+    rewardCustomers.forEach(customer => {
+      customer.rewards.forEach((category: any) => {
+        if (category.status === "ready") totalReadyRewards += category.pending;
+        if (category.status === "upcoming") totalUpcomingRewards += 1;
+      });
+    });
 
     return NextResponse.json({
       customers: rewardCustomers,
       stats: {
         totalRewardsGiven,
         customersWithRewards,
-        upcomingRewards,
-        readyRewards,
+        upcomingRewards: totalUpcomingRewards,
+        readyRewards: totalReadyRewards,
       },
     })
   } catch (error) {

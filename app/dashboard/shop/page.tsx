@@ -168,6 +168,7 @@ export default function ShopPage() {
           itemId: item._id,
           itemName: item.name,
           price: item.price,
+          isReward: false,
         }),
       })
 

@@ -37,7 +37,7 @@ export function AddPurchaseDialog({ open, onOpenChange, selectedItem, onSuccess 
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const drinkTypes = ["Mojito", "Ice Cream", "Milkshake", "Waffle"]
+  const drinkTypes = ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi"]
 
   useEffect(() => {
     if (selectedItem) {
@@ -84,6 +84,7 @@ export function AddPurchaseDialog({ open, onOpenChange, selectedItem, onSuccess 
           itemId: selectedDrink,
           itemName: selectedMenuItem.name,
           price: selectedMenuItem.price,
+          isReward: false,
         }),
       })
 

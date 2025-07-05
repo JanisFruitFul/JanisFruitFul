@@ -19,7 +19,7 @@ const MenuItemSchema = new Schema<IMenuItem>({
   category: {
     type: String,
     required: true,
-    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle"],
+    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi"],
   },
   price: {
     type: Number,

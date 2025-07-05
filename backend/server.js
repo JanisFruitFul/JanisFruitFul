@@ -396,10 +396,31 @@ app.post('/api/customers/purchase', async (req, res) => {
       itemId: isReward ? null : itemId,
       price: isReward ? 0 : price,
       date: new Date(),
-      isReward: !!isReward
+      isReward: !!isReward,
+      claimed: !!isReward
     };
 
     customer.orders.push(order);
+
+    // Initialize rewards map if it doesn't exist
+    if (!customer.rewards) customer.rewards = new Map();
+    if (!customer.rewards.has(drinkType)) {
+      customer.rewards.set(drinkType, { paid: 0, earned: 0, claimed: 0 });
+    }
+
+    const rewardData = customer.rewards.get(drinkType);
+    
+    if (!isReward) {
+      // Regular purchase - increment paid drinks
+      rewardData.paid += 1;
+      const newEarned = Math.floor(rewardData.paid / 5);
+      rewardData.earned = newEarned;
+    } else {
+      // Reward claim - increment claimed rewards
+      rewardData.claimed += 1;
+    }
+    
+    customer.rewards.set(drinkType, rewardData);
 
     // Only increment rewardsEarned if this is a reward
     if (isReward) {
@@ -430,12 +451,25 @@ app.get('/api/dashboard/stats', async (req, res) => {
     
     const totalDrinksSold = customers.reduce((total, customer) => total + customer.totalOrders, 0);
     
-    const upcomingRewards = customers.filter(customer => {
-      const regularOrders = customer.orders.filter(order => !order.isReward).length;
-      return regularOrders >= 5 && regularOrders % 6 === 5;
-    }).length;
+    // Calculate total rewards across all categories
+    let totalRewardsEarned = 0;
+    let totalRewardsClaimed = 0;
+    let totalUpcomingRewards = 0;
     
-    const rewardsEarned = customers.reduce((total, customer) => total + customer.rewardsEarned, 0);
+    customers.forEach(customer => {
+      if (customer.rewards && customer.rewards.size > 0) {
+        for (const [category, data] of customer.rewards.entries()) {
+          totalRewardsEarned += data.earned;
+          totalRewardsClaimed += data.claimed;
+          
+          // Check if customer is close to earning a reward (4 out of 5 drinks)
+          const progress = data.paid % 5;
+          if (progress >= 4 && data.paid > 0) {
+            totalUpcomingRewards += 1;
+          }
+        }
+      }
+    });
     
     // Get recent customers with reward information
     const recentCustomers = await Customer.find()
@@ -460,8 +494,9 @@ app.get('/api/dashboard/stats', async (req, res) => {
     res.json({
       totalCustomers,
       totalDrinksSold,
-      upcomingRewards,
-      rewardsEarned,
+      upcomingRewards: totalUpcomingRewards,
+      rewardsEarned: totalRewardsEarned,
+      rewardsClaimed: totalRewardsClaimed,
       recentCustomers: processedRecentCustomers
     });
   } catch (error) {
@@ -701,60 +736,80 @@ app.get('/api/rewards', async (req, res) => {
     await connectDB();
     const customers = await Customer.find().sort({ updatedAt: -1 });
     
-    // Process customers for reward status (new logic: every 5 paid drinks = 1 free)
+    // Process customers for reward status with per-category tracking
     const rewardCustomers = customers.map((customer) => {
-      // Calculate paid drinks (excluding free rewards)
-      const paidDrinks = customer.orders.filter(order => !order.isReward).length;
-      
-      // Calculate effective paid drinks (subtract claimed rewards)
-      // Each claimed reward "consumes" 5 paid drinks
-      const effectivePaidDrinks = paidDrinks - (customer.rewardsEarned * 5);
-      
-      // Calculate progress toward next reward (every 5 paid drinks = 1 free)
-      const progressTowardReward = effectivePaidDrinks % 5;
-      const drinksUntilReward = progressTowardReward === 0 && effectivePaidDrinks > 0 ? 0 : 5 - progressTowardReward;
-      
-      // Determine status
-      let status;
-      if (effectivePaidDrinks <= 0) {
-        status = "progress";
-      } else if (progressTowardReward === 0 && effectivePaidDrinks > 0) {
-        // Show "ready" when they have exactly 5 effective paid drinks (or multiples of 5)
-        status = "ready"; // Ready to claim reward
-      } else if (progressTowardReward >= 4) {
-        status = "upcoming";
-      } else {
-        status = "progress";
+      const categoryProgress = [];
+
+      // Process each category in the rewards map
+      if (customer.rewards && customer.rewards.size > 0) {
+        for (const [category, data] of customer.rewards.entries()) {
+          const pendingRewards = data.earned - data.claimed;
+          const progress = data.paid % 5;
+          const drinksUntilReward = progress === 0 && data.paid > 0 ? 0 : 5 - progress;
+          
+          let status;
+          if (data.paid <= 0) {
+            status = "progress";
+          } else if (pendingRewards > 0) {
+            status = "ready";
+          } else if (progress >= 4) {
+            status = "upcoming";
+          } else {
+            status = "progress";
+          }
+
+          categoryProgress.push({
+            category,
+            paid: data.paid,
+            earned: data.earned,
+            claimed: data.claimed,
+            pending: pendingRewards,
+            progress,
+            drinksUntilReward,
+            status,
+          });
+        }
       }
+
+      // Calculate overall stats for backward compatibility
+      const totalPaidDrinks = customer.orders.filter(order => !order.isReward).length;
+      const totalRewardsEarned = customer.rewardsEarned || 0;
 
       return {
         _id: customer._id,
         name: customer.name,
         phone: customer.phone,
         totalOrders: customer.totalOrders,
-        paidDrinks: paidDrinks,
-        rewardsEarned: customer.rewardsEarned,
-        status,
-        drinksUntilReward,
-        progressTowardReward,
-      }
-    })
+        totalPaidDrinks,
+        totalRewardsEarned,
+        rewards: categoryProgress,
+      };
+    });
 
-    // Calculate stats
-    const totalRewardsGiven = customers.reduce((sum, customer) => sum + customer.rewardsEarned, 0);
-    const customersWithRewards = customers.filter((customer) => customer.rewardsEarned > 0).length;
-    const upcomingRewards = rewardCustomers.filter((customer) => customer.status === "upcoming").length;
-    const readyRewards = rewardCustomers.filter((customer) => customer.status === "ready").length;
+    // Calculate overall stats
+    const totalRewardsGiven = customers.reduce((sum, customer) => sum + (customer.rewardsEarned || 0), 0);
+    const customersWithRewards = customers.filter((customer) => (customer.rewardsEarned || 0) > 0).length;
+    
+    // Count ready and upcoming rewards across all categories
+    let totalReadyRewards = 0;
+    let totalUpcomingRewards = 0;
+    
+    rewardCustomers.forEach(customer => {
+      customer.rewards.forEach(category => {
+        if (category.status === "ready") totalReadyRewards += category.pending;
+        if (category.status === "upcoming") totalUpcomingRewards += 1;
+      });
+    });
 
     res.json({
       customers: rewardCustomers,
       stats: {
         totalRewardsGiven,
         customersWithRewards,
-        upcomingRewards,
-        readyRewards,
+        upcomingRewards: totalUpcomingRewards,
+        readyRewards: totalReadyRewards,
       },
-    })
+    });
   } catch (error) {
     console.error("Error fetching rewards:", error);
     res.status(500).json({ error: "Failed to fetch rewards data" });
@@ -782,5 +837,90 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Claim reward endpoint
+app.post('/api/customers/:id/claim-reward', async (req, res) => {
+  try {
+    await connectDB();
+    const { category } = req.body;
+    const customer = await Customer.findById(req.params.id);
+
+    if (!customer || !category) {
+      return res.status(400).json({ success: false, message: "Invalid request" });
+    }
+
+    // Initialize rewards map if it doesn't exist
+    if (!customer.rewards) customer.rewards = new Map();
+    if (!customer.rewards.has(category)) {
+      customer.rewards.set(category, { paid: 0, earned: 0, claimed: 0 });
+    }
+
+    const reward = customer.rewards.get(category);
+    if (!reward || reward.earned <= reward.claimed) {
+      return res.status(400).json({ success: false, message: "No rewards available to claim" });
+    }
+
+    // Create reward order
+    customer.orders.push({
+      drinkType: category,
+      itemName: `${category} (Reward)`,
+      itemId: null,
+      price: 0,
+      isReward: true,
+      claimed: true,
+      date: new Date(),
+    });
+
+    // Update reward data
+    reward.claimed += 1;
+    customer.rewards.set(category, reward);
+    
+    // Increment total rewards earned
+    customer.rewardsEarned = (customer.rewardsEarned || 0) + 1;
+
+    await customer.save();
+
+    res.json({ 
+      success: true, 
+      message: "Reward claimed successfully", 
+      customer,
+      claimedCategory: category
+    });
+  } catch (error) {
+    console.error("Error claiming reward:", error);
+    res.status(500).json({ success: false, message: "Failed to claim reward" });
+  }
+});
+
+// Get customer drink history by category
+app.get('/api/customers/:id/drinks/:category', async (req, res) => {
+  try {
+    await connectDB();
+    const { id, category } = req.params;
+    
+    const customer = await Customer.findById(id);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    const categoryOrders = customer.orders.filter(order => order.drinkType === category);
+    
+    res.json({
+      success: true,
+      customer: {
+        name: customer.name,
+        phone: customer.phone,
+      },
+      category,
+      orders: categoryOrders,
+      totalOrders: categoryOrders.length,
+      paidOrders: categoryOrders.filter(order => !order.isReward).length,
+      rewardOrders: categoryOrders.filter(order => order.isReward).length,
+    });
+  } catch (error) {
+    console.error("Error fetching customer drinks:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch customer drinks" });
+  }
+});
 
 startServer(); 

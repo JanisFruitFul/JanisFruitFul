@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     }
 
     // Validate category
-    const validCategories = ["Mojito", "Ice Cream", "Milkshake", "Waffle"];
+    const validCategories = ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi"];
     if (!validCategories.includes(category)) {
       return NextResponse.json(
         { error: "Invalid category. Must be one of: " + validCategories.join(", ") },

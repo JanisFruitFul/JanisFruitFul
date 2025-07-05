@@ -7,6 +7,13 @@ export interface IOrder {
   price: number
   date: Date
   isReward: boolean
+  claimed: boolean
+}
+
+export interface IRewardData {
+  paid: number
+  earned: number
+  claimed: number
 }
 
 export interface ICustomer extends Document {
@@ -15,6 +22,7 @@ export interface ICustomer extends Document {
   orders: IOrder[]
   totalOrders: number
   rewardsEarned: number
+  rewards: Map<string, IRewardData>
   createdAt: Date
   updatedAt: Date
 }
@@ -23,7 +31,7 @@ const OrderSchema = new Schema<IOrder>({
   drinkType: {
     type: String,
     required: true,
-    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Reward"],
+    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi", "Reward"],
   },
   itemName: {
     type: String,
@@ -33,7 +41,7 @@ const OrderSchema = new Schema<IOrder>({
     type: Schema.Types.ObjectId,
     ref: "MenuItem",
     required: function(this: IOrder) {
-      return this.drinkType !== "Reward";
+      return !this.isReward;
     },
   },
   price: {
@@ -46,6 +54,10 @@ const OrderSchema = new Schema<IOrder>({
     default: Date.now,
   },
   isReward: {
+    type: Boolean,
+    default: false,
+  },
+  claimed: {
     type: Boolean,
     default: false,
   },
@@ -71,6 +83,15 @@ const CustomerSchema = new Schema<ICustomer>({
   rewardsEarned: {
     type: Number,
     default: 0,
+  },
+  rewards: {
+    type: Map,
+    of: {
+      paid: { type: Number, default: 0 },      // count of paid drinks
+      earned: { type: Number, default: 0 },    // rewards unlocked
+      claimed: { type: Number, default: 0 }    // rewards claimed
+    },
+    default: {},
   },
   createdAt: {
     type: Date,

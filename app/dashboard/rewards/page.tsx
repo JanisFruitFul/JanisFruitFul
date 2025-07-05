@@ -19,19 +19,29 @@ import {
   Target,
   TrendingUp,
   Users,
+  Coffee,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+
+interface CategoryReward {
+  category: string;
+  paid: number;
+  earned: number;
+  claimed: number;
+  pending: number;
+  progress: number;
+  drinksUntilReward: number;
+  status: "earned" | "upcoming" | "progress" | "ready";
+}
 
 interface RewardCustomer {
   _id: string;
   name: string;
   phone: string;
   totalOrders: number;
-  paidDrinks: number;
-  rewardsEarned: number;
-  status: "earned" | "upcoming" | "progress" | "ready";
-  drinksUntilReward: number;
-  progressTowardReward: number;
+  totalPaidDrinks: number;
+  totalRewardsEarned: number;
+  rewards: CategoryReward[];
 }
 
 export default function RewardsPage() {
@@ -69,7 +79,6 @@ export default function RewardsPage() {
         throw new Error('Invalid data structure received from server');
       }
   
-      // Use the data directly from the backend - don't override the status
       setRewardCustomers(data.customers);
       setStats(data.stats || {
         totalRewardsGiven: 0,
@@ -80,7 +89,6 @@ export default function RewardsPage() {
     } catch (error) {
       console.error("❌ Failed to fetch reward data:", error);
       setError(error instanceof Error ? error.message : 'Failed to fetch reward data');
-      // Set empty data to prevent UI errors
       setRewardCustomers([]);
       setStats({
         totalRewardsGiven: 0,
@@ -92,16 +100,13 @@ export default function RewardsPage() {
       setLoading(false);
     }
   };
-  
-  
-  
 
-  const sendWhatsAppReminder = (customer: RewardCustomer) => {
+  const sendWhatsAppReminder = (customer: RewardCustomer, category: CategoryReward) => {
     const message = `Hi ${customer.name}, You're just ${
-      customer.drinksUntilReward
-    } drink${
-      customer.drinksUntilReward > 1 ? "s" : ""
-    } away from a free reward! Visit us soon.Keep the streak going and claim your free drink! 💥  
+      category.drinksUntilReward
+    } ${category.category} drink${
+      category.drinksUntilReward > 1 ? "s" : ""
+    } away from a free reward! Visit us soon to claim your free ${category.category}. Keep the streak going! 💥  
 We can't wait to see you again 😊`;
     const whatsappUrl = `https://api.whatsapp.com/send?phone=91${
       customer.phone
@@ -109,44 +114,45 @@ We can't wait to see you again 😊`;
     window.open(whatsappUrl, "_blank");
   };
 
-  const claimReward = async (customer: RewardCustomer) => {
+  const claimReward = async (customer: RewardCustomer, category: CategoryReward) => {
     try {
-      const response = await fetch(getApiUrl('api/customers/purchase'), {
+      console.log('🎁 Attempting to claim reward:', {
+        customerId: customer._id,
+        customerName: customer.name,
+        category: category.category,
+        pending: category.pending
+      });
+
+      const apiUrl = getApiUrl(`api/customers/${customer._id}/claim-reward`);
+      console.log('🌐 Claim reward URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: customer.name,
-          customerPhone: customer.phone,
-          drinkType: 'Reward',
-          itemId: null,
-          itemName: 'Free Reward',
-          price: 0,
-          isReward: true
+          category: category.category
         })
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error('Failed to claim reward');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Claim reward failed:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      console.log('✅ Claim reward successful:', result);
 
       // Refresh the rewards data
       await fetchRewards();
     } catch (error) {
-      console.error('Error claiming reward:', error);
-      alert('Failed to claim reward. Please try again.');
+      console.error('❌ Error claiming reward:', error);
+      alert(`Failed to claim reward: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-
-  const earnedRewards = rewardCustomers.filter((c) => c.status === "earned");
-  const upcomingRewards = rewardCustomers.filter(
-    (c) => c.status === "upcoming"
-  );
-  const progressCustomers = rewardCustomers.filter(
-    (c) => c.status === "progress"
-  );
-  const readyRewards = rewardCustomers.filter(
-    (c) => c.status === "ready"
-  );
 
   const getCardStyle = (status: string) => {
     switch (status) {
@@ -170,39 +176,37 @@ We can't wait to see you again 😊`;
       case "upcoming":
         return <Target className="h-5 w-5 text-yellow-600" />;
       default:
-        return <Users className="h-5 w-5 text-red-600" />;
+        return <Coffee className="h-5 w-5 text-red-600" />;
     }
   };
 
-  // const getStatusBadge = (status: string, drinksToReward: number) => {
-  //   switch (status) {
-  //     case "earned":
-  //       return (
-  //         <Badge className="bg-green-600 hover:bg-green-700">
-  //           🎉 Reward Ready
-  //         </Badge>
-  //       );
-  //     case "upcoming":
-  //       return (
-  //         <Badge className="bg-yellow-600 hover:bg-yellow-700">
-  //           ⚡ Almost There
-  //         </Badge>
-  //       );
-  //     default:
-  //       return (
-  //         <Badge className="bg-red-600 hover:bg-red-700">
-  //           {drinksToReward} drinks needed
-  //         </Badge>
-  //       );
-  //   }
-  // };
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "mojito":
+        return "🍹";
+      case "ice cream":
+        return "🍦";
+      case "milkshake":
+        return "🥤";
+      case "waffle":
+        return "🧇";
+      case "juice":
+        return "🍊";
+      case "fruit plate":
+        return "🍎";
+      case "lassi":
+        return "🥛";
+      default:
+        return "☕";
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Rewards Management</h1>
         <p className="text-gray-600">
-          Track customer rewards with visual progress indicators
+          Track customer rewards by category with visual progress indicators
         </p>
       </div>
 
@@ -298,76 +302,21 @@ We can't wait to see you again 😊`;
             </Card>
           </div>
 
-          {/* Category Headers with Counts */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Award className="h-6 w-6 text-green-600" />
-                <h3 className="text-lg font-semibold text-green-800">
-                  Reward Ready
-                </h3>
-              </div>
-              <p className="text-2xl font-bold text-green-600">
-                {earnedRewards.length}
-              </p>
-              <p className="text-sm text-green-600">customers</p>
-            </div>
-
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Gift className="h-6 w-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-blue-800">
-                  Ready to Claim
-                </h3>
-              </div>
-              <p className="text-2xl font-bold text-blue-600">
-                {readyRewards.length}
-              </p>
-              <p className="text-sm text-blue-600">customers</p>
-            </div>
-
-            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="h-6 w-6 text-yellow-600" />
-                <h3 className="text-lg font-semibold text-yellow-800">
-                  Almost There
-                </h3>
-              </div>
-              <p className="text-2xl font-bold text-yellow-600">
-                {upcomingRewards.length}
-              </p>
-              <p className="text-sm text-yellow-600">customers</p>
-            </div>
-
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Users className="h-6 w-6 text-red-600" />
-                <h3 className="text-lg font-semibold text-red-800">In Progress</h3>
-              </div>
-              <p className="text-2xl font-bold text-red-600">
-                {progressCustomers.length}
-              </p>
-              <p className="text-sm text-red-600">customers</p>
-            </div>
-          </div>
-
-          {/* All Customers in One Grid */}
+          {/* All Customers with Category Rewards */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">
-              All Customers by Reward Status
+              All Customers by Category Rewards
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {rewardCustomers.map((customer) => (
                 <Card
                   key={customer._id}
-                  className={`transition-all duration-200 hover:shadow-lg ${getCardStyle(
-                    customer.status
-                  )}`}
+                  className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200"
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        {getStatusIcon(customer.status)}
+                        <Users className="h-5 w-5 text-gray-600" />
                         <div>
                           <CardTitle className="text-base">
                             {customer.name}
@@ -377,80 +326,108 @@ We can't wait to see you again 😊`;
                           </CardDescription>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => sendWhatsAppReminder(customer)}
-                        className="text-green-600 border-green-600 hover:bg-green-50"
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Paid Drinks</span>
+                      <span className="text-sm font-medium">Total Drinks</span>
                       <Badge variant="secondary" className="font-bold">
-                        {customer.paidDrinks}
+                        {customer.totalPaidDrinks}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Free Drinks</span>
+                      <span className="text-sm font-medium">Total Rewards</span>
                       <Badge variant="secondary" className="font-bold">
-                      {customer.rewardsEarned}
+                        {customer.totalRewardsEarned}
                       </Badge>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Progress</span>
-                        <span className="text-xs text-gray-500">
-                          {customer.status === "ready"
-                            ? "5/5"
-                            : `${customer.progressTowardReward}/5`}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            customer.status === "ready"
-                              ? "bg-blue-600"
-                              : customer.status === "upcoming"
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                          }`}
-                          style={{
-                            width:
-                              customer.status === "ready"
-                                ? "100%"
-                                : `${(customer.progressTowardReward / 5) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
+                    {/* Category Rewards */}
+                    {customer.rewards && customer.rewards.length > 0 ? (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-700">Category Progress:</h4>
+                        {customer.rewards.map((category, index) => (
+                          <div key={index} className={`p-2 rounded-lg ${getCardStyle(category.status)}`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-1">
+                                <span className="text-lg">{getCategoryIcon(category.category)}</span>
+                                <span className="text-sm font-medium">{category.category}</span>
+                              </div>
+                              {getStatusIcon(category.status)}
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span>Paid: {category.paid}</span>
+                                <span>Earned: {category.earned}</span>
+                                <span>Claimed: {category.claimed}</span>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs">Progress</span>
+                                  <span className="text-xs text-gray-500">
+                                    {category.status === "ready"
+                                      ? "5/5"
+                                      : `${category.progress}/5`}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                                      category.status === "ready"
+                                        ? "bg-blue-600"
+                                        : category.status === "upcoming"
+                                        ? "bg-yellow-500"
+                                        : "bg-red-500"
+                                    }`}
+                                    style={{
+                                      width:
+                                        category.status === "ready"
+                                          ? "100%"
+                                          : `${(category.progress / 5) * 100}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
 
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-700">
-                        {customer.status === "ready" 
-                          ? "🎁 Ready to claim free drink!"
-                          : customer.status === "upcoming"
-                          ? `Just ${customer.drinksUntilReward} more drink${customer.drinksUntilReward > 1 ? "s" : ""}!`
-                          : customer.rewardsEarned > 0
-                          ? `🎉 Previously claimed ${customer.rewardsEarned} free drink${customer.rewardsEarned > 1 ? "s" : ""}`
-                          : `${customer.drinksUntilReward} drinks to go`
-                        }
-                      </p>
-                    </div>
+                              <div className="text-center p-1 bg-white/50 rounded text-xs">
+                                {category.status === "ready" 
+                                  ? `🎁 Ready to claim ${category.pending} free ${category.category}!`
+                                  : category.status === "upcoming"
+                                  ? `Just ${category.drinksUntilReward} more ${category.category}!`
+                                  : `${category.drinksUntilReward} ${category.category} to go`
+                                }
+                              </div>
 
-                    {/* Claim Reward Button */}
-                    {customer.status === "ready" && (
-                      <Button
-                        onClick={() => claimReward(customer)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                        size="sm"
-                      >
-                        🎁 Claim Free Reward
-                      </Button>
+                              {/* Action Buttons */}
+                              <div className="flex gap-1 mt-2">
+                                {category.status === "ready" && (
+                                  <Button
+                                    onClick={() => claimReward(customer, category)}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                    size="sm"
+                                  >
+                                    Claim
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => sendWhatsAppReminder(customer, category)}
+                                  className="text-green-600 border-green-600 hover:bg-green-50"
+                                >
+                                  <MessageCircle className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500">No category rewards yet</p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

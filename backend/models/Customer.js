@@ -4,7 +4,7 @@ const OrderSchema = new mongoose.Schema({
   drinkType: {
     type: String,
     required: true,
-    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Reward"],
+    enum: ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi", "Reward"],
   },
   itemName: {
     type: String,
@@ -14,7 +14,7 @@ const OrderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "MenuItem",
     required: function() {
-      return this.drinkType !== "Reward";
+      return !this.isReward;
     },
   },
   price: {
@@ -27,6 +27,10 @@ const OrderSchema = new mongoose.Schema({
     default: Date.now,
   },
   isReward: {
+    type: Boolean,
+    default: false,
+  },
+  claimed: {
     type: Boolean,
     default: false,
   },
@@ -52,6 +56,15 @@ const CustomerSchema = new mongoose.Schema({
   rewardsEarned: {
     type: Number,
     default: 0,
+  },
+  rewards: {
+    type: Map,
+    of: {
+      paid: { type: Number, default: 0 },      // count of paid drinks
+      earned: { type: Number, default: 0 },    // rewards unlocked
+      claimed: { type: Number, default: 0 }    // rewards claimed
+    },
+    default: {},
   },
   createdAt: {
     type: Date,

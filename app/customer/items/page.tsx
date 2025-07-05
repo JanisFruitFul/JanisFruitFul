@@ -86,6 +86,12 @@ export default function CustomerItemsPage() {
         return <GlassWater className="h-5 w-5" />;
       case 'waffle':
         return <Cookie className="h-5 w-5" />;
+      case 'juice':
+        return <Coffee className="h-5 w-5" />;
+      case 'fruit plate':
+        return <Cookie className="h-5 w-5" />;
+      case 'lassi':
+        return <GlassWater className="h-5 w-5" />;
       default:
         return <Coffee className="h-5 w-5" />;
     }
@@ -101,6 +107,12 @@ export default function CustomerItemsPage() {
         return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'waffle':
         return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'juice':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'fruit plate':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'lassi':
+        return 'bg-indigo-100 text-indigo-700 border-indigo-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
