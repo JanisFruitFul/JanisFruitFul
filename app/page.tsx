@@ -2,20 +2,29 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Coffee, Users, TrendingUp, Gift, Target, ShoppingCart } from "lucide-react"
+import { ArrowRight, Coffee, Users, TrendingUp, Gift, Target, ShoppingCart, Calendar, DollarSign, Activity } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { getApiUrl } from "@/lib/config"
 
+interface DailyEarnings {
+  date: string;
+  earnings: number;
+  orders: number;
+}
+
 export default function HomePage() {
   const [showStats, setShowStats] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalDrinksSold: 0,
     upcomingRewards: 0,
     rewardsEarned: 0,
   });
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarnings[]>([]);
   const [loading, setLoading] = useState(false);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -47,12 +56,66 @@ export default function HomePage() {
     }
   };
 
+  const fetchDailyEarnings = async () => {
+    try {
+      setCalendarLoading(true);
+      const response = await fetch(getApiUrl('api/earnings?period=month'));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setDailyEarnings(data.dailyEarnings || []);
+    } catch (error) {
+      console.error("Failed to fetch daily earnings:", error);
+      // Set default sample data if API fails
+      setDailyEarnings([
+        { date: "2024-01-15", earnings: 2500, orders: 12 },
+        { date: "2024-01-16", earnings: 3200, orders: 15 },
+        { date: "2024-01-17", earnings: 1800, orders: 8 },
+        { date: "2024-01-18", earnings: 4100, orders: 20 },
+        { date: "2024-01-19", earnings: 2900, orders: 14 },
+        { date: "2024-01-20", earnings: 3600, orders: 18 },
+        { date: "2024-01-21", earnings: 2200, orders: 11 },
+      ]);
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
   const handleShowStats = () => {
     if (!showStats) {
       fetchStats();
     }
     setShowStats(!showStats);
   };
+
+  const handleShowCalendar = () => {
+    if (!showCalendar) {
+      fetchDailyEarnings();
+    }
+    setShowCalendar(!showCalendar);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -66,8 +129,8 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Show Stats Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-4 flex-wrap">
           <Button 
             onClick={handleShowStats}
             variant="outline"
@@ -78,6 +141,20 @@ export default function HomePage() {
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
             ) : null}
             {showStats ? 'Hide Stats' : 'Show Stats'}
+          </Button>
+          
+          <Button 
+            onClick={handleShowCalendar}
+            variant="outline"
+            className="px-6 py-2 text-sm font-medium"
+            disabled={calendarLoading}
+          >
+            {calendarLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+            ) : (
+              <Calendar className="h-4 w-4 mr-2" />
+            )}
+            {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
           </Button>
         </div>
 

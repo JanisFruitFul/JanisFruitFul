@@ -28,7 +28,8 @@ interface CartItem extends MenuItem {
   quantity: number
 }
 
-const categories = ["Mojito", "Ice Cream", "Milkshake", "Juice", "Fruit Plate", "Lassi"]
+// Default categories - will be extended with dynamic categories from database
+const defaultCategories = ["Mojito", "Ice Cream", "Milkshake", "Juice", "Fruit Plate", "Lassi"]
 
 export default function ShopPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -41,7 +42,11 @@ export default function ShopPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("name")
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>([])
   const { toast } = useToast()
+
+  // Combine default and dynamic categories, removing duplicates
+  const categories = [...new Set([...defaultCategories, ...dynamicCategories])]
 
   useEffect(() => {
     fetchMenuItems()
@@ -90,7 +95,12 @@ export default function ShopPage() {
       const response = await fetch(getApiUrl('api/menu'))
       if (response.ok) {
         const data = await response.json()
-        setMenuItems(data)
+        const items = Array.isArray(data) ? data : []
+        setMenuItems(items)
+        
+        // Extract unique categories from menu items
+        const uniqueCategories = [...new Set(items.map(item => item.category))]
+        setDynamicCategories(uniqueCategories)
       } else {
         console.error("Failed to fetch menu items")
       }
@@ -239,12 +249,6 @@ export default function ShopPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Shop</h1>
-          <p className="text-gray-600">Browse and purchase menu items</p>
-        </div>
-      </div>
 
       {/* Filters Section */}
       <div className="flex gap-4 items-center">
@@ -349,15 +353,16 @@ export default function ShopPage() {
       )}
 
       {/* Menu Items */}
-      {categories.map((category) => (
+      {Object.keys(groupedItems).length > 0 ? (
+        Object.entries(groupedItems).map(([category, items]) => (
         <div key={category} className="space-y-4">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-semibold text-gray-800">{category}s</h2>
-            <Badge variant="secondary">{groupedItems[category]?.length || 0} items</Badge>
+              <Badge variant="secondary">{items.length} items</Badge>
           </div>
 
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {groupedItems[category]?.map((item) => {
+              {items.map((item) => {
               const quantity = getItemQuantity(item._id)
               const isDisabled = !item.isActive
               
@@ -441,7 +446,103 @@ export default function ShopPage() {
             })}
           </div>
         </div>
-      ))}
+        ))
+      ) : (
+        // Fallback: Show all items without category grouping if no categories match
+        filteredItems.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-gray-800">All Items</h2>
+              <Badge variant="secondary">{filteredItems.length} items</Badge>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              {filteredItems.map((item) => {
+                const quantity = getItemQuantity(item._id)
+                const isDisabled = !item.isActive
+                
+                return (
+                  <Card 
+                    key={item._id} 
+                    className={`flex-shrink-0 w-48 overflow-hidden transition-all duration-200 group ${
+                      isDisabled 
+                        ? 'opacity-50 grayscale cursor-not-allowed' 
+                        : 'hover:shadow-lg'
+                    }`}
+                  >
+                    <div className="aspect-square bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center relative">
+                      <Image
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        width={150}
+                        height={150}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = `/placeholder.svg?height=150&width=150`
+                        }}
+                      />
+                      {quantity > 0 && !isDisabled && (
+                        <div className="absolute top-2 right-2 bg-emerald-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {quantity}
+                        </div>
+                      )}
+                      {isDisabled && (
+                        <div className="absolute top-2 right-2 bg-red-600 text-white rounded-full px-2 py-1 text-xs font-bold">
+                          Unavailable
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader className="pb-2">
+                      <CardTitle className={`text-sm leading-tight ${isDisabled ? 'text-gray-500' : ''}`}>
+                        {item.name}
+                      </CardTitle>
+                      <CardDescription className={`font-semibold ${isDisabled ? 'text-gray-400' : 'text-emerald-600'}`}>
+                        ₹{item.price}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {isDisabled ? (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gray-400 text-gray-600 cursor-not-allowed"
+                          disabled
+                        >
+                          Unavailable
+                        </Button>
+                      ) : quantity === 0 ? (
+                        <Button
+                          size="sm"
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-xs"
+                          onClick={() => addToCart(item)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeFromCart(item._id)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="text-sm font-semibold px-2">{quantity}</span>
+                          <Button size="sm" variant="outline" onClick={() => addToCart(item)} className="h-7 w-7 p-0">
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        )
+      )}
 
       {/* Checkout Modal */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>

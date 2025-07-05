@@ -201,7 +201,7 @@ We can't wait to see you again 😊`
                 <div className="text-center p-4 bg-emerald-50 rounded-lg">
                   <ShoppingBag className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-emerald-600">{selectedCustomer.totalOrders}</div>
-                  <div className="text-sm text-gray-600">Total Orders</div>
+                  <div className="text-sm text-gray-600">Total Orders Incl. Rewards</div>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <Gift className="h-6 w-6 text-blue-600 mx-auto mb-2" />

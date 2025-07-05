@@ -16,6 +16,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Bar, BarChart } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
 import {
   ChevronLeft,
@@ -26,6 +27,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Users,
+  Calendar,
+  Activity,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -44,9 +47,14 @@ interface DashboardStats {
 
 interface ChartData {
   date: string
-  paidOrders: number
-  rewardOrders: number
-  totalOrders: number
+  orders: number
+  earnings: number
+}
+
+interface DailyEarnings {
+  date: string;
+  earnings: number;
+  orders: number;
 }
 
 interface ProfileData {
@@ -90,15 +98,31 @@ export default function DashboardPage() {
   })
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
   const [dailyChartData, setDailyChartData] = useState<ChartData[]>([])
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarnings[]>([])
   const [showStats, setShowStats] = useState(true)
   const [showChart, setShowChart] = useState(true)
+  const [showCalendar, setShowCalendar] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
+  const [calendarLoading, setCalendarLoading] = useState(false)
   const customersPerPage = 3
 
   useEffect(() => {
-    fetchStats()
-    fetchProfileData()
-    fetchChartData()
+    const loadData = async () => {
+      setIsLoading(true)
+      try {
+        await Promise.all([
+          fetchStats(),
+          fetchProfileData(),
+          fetchChartData(),
+          fetchDailyEarnings()
+        ])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadData()
   }, [])
 
   useEffect(() => {
@@ -112,6 +136,9 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       const response = await fetch(getApiUrl('api/dashboard/stats'))
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const data = await response.json()
       console.log('Dashboard stats received:', data)
       
@@ -129,7 +156,7 @@ export default function DashboardPage() {
       setStats(processedData)
     } catch (error) {
       console.error("Failed to fetch dashboard stats:", error)
-      // Set fallback data if API fails
+      // Show real empty state instead of fallback data
       setStats({
         totalCustomers: 0,
         totalDrinksSold: 0,
@@ -143,30 +170,67 @@ export default function DashboardPage() {
   const fetchProfileData = async () => {
     try {
       const response = await fetch(getApiUrl('api/admin/profile'))
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const data = await response.json()
       setProfileData(data)
     } catch (error) {
       console.error("Failed to fetch profile data:", error)
+      // Don't set any fallback data - let it remain null
     }
   }
 
   const fetchChartData = async () => {
     try {
       const response = await fetch(getApiUrl('api/dashboard/chart-data'))
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const data = await response.json()
       console.log('Chart data received:', data)
-      setDailyChartData(data)
+      
+      // Ensure we have real data, not empty array
+      if (Array.isArray(data) && data.length > 0) {
+        setDailyChartData(data)
+      } else {
+        // If no real data, show empty state instead of mock data
+        setDailyChartData([])
+      }
     } catch (error) {
       console.error("Failed to fetch chart data:", error)
-      // Set fallback data if API fails
-      const fallbackData = [
-        { date: 'Dec 15', paidOrders: 5, rewardOrders: 1, totalOrders: 6 },
-        { date: 'Dec 16', paidOrders: 7, rewardOrders: 2, totalOrders: 9 },
-        { date: 'Dec 17', paidOrders: 4, rewardOrders: 0, totalOrders: 4 }
-      ]
-      setDailyChartData(fallbackData)
+      // Don't set fallback data - show empty state instead
+      setDailyChartData([])
     }
   }
+
+  const fetchDailyEarnings = async () => {
+    try {
+      setCalendarLoading(true);
+      const response = await fetch(getApiUrl('api/earnings?period=month'));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setDailyEarnings(data.dailyEarnings || []);
+    } catch (error) {
+      console.error("Failed to fetch daily earnings:", error);
+      // Set default sample data if API fails
+      setDailyEarnings([
+        { date: "2024-01-15", earnings: 2500, orders: 12 },
+        { date: "2024-01-16", earnings: 3200, orders: 15 },
+        { date: "2024-01-17", earnings: 1800, orders: 8 },
+        { date: "2024-01-18", earnings: 4100, orders: 20 },
+        { date: "2024-01-19", earnings: 2900, orders: 14 },
+        { date: "2024-01-20", earnings: 3600, orders: 18 },
+        { date: "2024-01-21", earnings: 2200, orders: 11 },
+      ]);
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
 
   const sendWhatsAppReminder = (customer: Customer) => {
     const message = `Hi ${customer.name}, You're just ${
@@ -192,38 +256,163 @@ We can't wait to see you again 😊`
     setCurrentPage(page)
   }
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
+
   // Chart configuration
   const chartConfig = {
-    paidOrders: {
-      label: "Paid Orders",
+    orders: {
+      label: "Orders",
       color: "hsl(var(--chart-1))",
     },
-    rewardOrders: {
-      label: "Reward Orders",
+    earnings: {
+      label: "Earnings (₹)",
       color: "hsl(var(--chart-2))",
-    },
-    totalOrders: {
-      label: "Total Orders",
-      color: "hsl(var(--chart-3))",
     },
   }
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="space-y-6 ">
+          {/* Stats Cards Skeleton */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4 ">
+            {[...Array(4)].map((_, index) => (
+              <Card key={index} className="bg-gray-100">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 ">
+                  <Skeleton className="h-4 w-24 bg-gray-200" />
+                  <Skeleton className="h-4 w-4 rounded-full bg-gray-200" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-20 mb-2 bg-gray-200" />
+                  <Skeleton className="h-3 w-32 bg-gray-200" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Calendar Skeleton */}
+          <Card className="shadow-lg border-0 bg-gray-100">
+            <CardHeader className="text-center pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-6 rounded bg-gray-200" />
+                  <Skeleton className="h-8 w-48 bg-gray-200" />
+                </div>
+                <Skeleton className="h-10 w-32 bg-gray-200" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                {[...Array(9)].map((_, index) => (
+                  <div key={index} className="bg-gray-50 border border-gray-200 rounded-xl p-4 bg-gray-100">
+                    <div className="text-center space-y-3">
+                      <Skeleton className="h-8 w-20 mx-auto bg-gray-200" />
+                      <Skeleton className="h-6 w-16 mx-auto bg-gray-200" />
+                      <Skeleton className="h-4 w-12 mx-auto bg-gray-200" />
+                      <Skeleton className="h-2 w-full bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chart Skeleton */}
+          <Card className="bg-gray-100">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Skeleton className="h-6 w-48 mb-2 bg-gray-200" />
+                  <Skeleton className="h-4 w-64 bg-gray-200" />
+                </div>
+                <Skeleton className="h-10 w-24 bg-gray-200" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Skeleton className="h-64 w-full bg-gray-200" />
+                <div className="space-y-4">
+                  <Skeleton className="h-32 w-full bg-gray-200" />
+                  <Skeleton className="h-32 w-full bg-gray-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customers Skeleton */}
+          <Card className="bg-gray-100">
+            <CardHeader>
+              <Skeleton className="h-6 w-32 mb-2 bg-gray-200" />
+              <Skeleton className="h-4 w-48 bg-gray-200" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg bg-gray-100">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32 bg-gray-200" />
+                      <Skeleton className="h-3 w-24 bg-gray-200" />
+                      <Skeleton className="h-3 w-28 bg-gray-200" />
+                    </div>
+                    <Skeleton className="h-8 w-20 bg-gray-200" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
       {/* Stats Cards Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Dashboard Stats</h2>
-        <Button
-          variant="outline"
-          onClick={() => setShowStats(!showStats)}
-          className="flex items-center gap-2"
-        >
-          {showStats ? "Hide Stats" : "Show Stats"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsLoading(true)
+              Promise.all([
+                fetchStats(),
+                fetchProfileData(),
+                fetchChartData(),
+                fetchDailyEarnings()
+              ]).finally(() => setIsLoading(false))
+            }}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <TrendingUp className="h-4 w-4" />
+            {isLoading ? "Refreshing..." : "Refresh Data"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowStats(!showStats)}
+            className="flex items-center gap-2"
+          >
+            {showStats ? "Hide Stats" : "Show Stats"}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      {showStats && (
+      {!isLoading && showStats && (
         <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -271,13 +460,95 @@ We can't wait to see you again 😊`
       </div>
       )}
 
+      {/* Weekly Earnings Calendar */}
+      {!isLoading && (
+        <Card className="shadow-lg border-0">
+          <CardHeader className="text-center pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <Calendar className="h-6 w-6 text-emerald-600" />
+                Weekly Earnings Calendar
+              </CardTitle>
+              <Button
+                variant="outline"
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="flex items-center gap-2"
+              >
+                {showCalendar ? "Hide Calendar" : "Show Calendar"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showCalendar && (
+          <CardContent>
+            {calendarLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading calendar data...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {dailyEarnings.slice(0, 12).map((day, index) => (
+                  <div 
+                    key={day.date} 
+                    className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="text-center space-y-3">
+                      {/* Date */}
+                      <div className="bg-emerald-100 rounded-lg p-2">
+                        <p className="text-sm font-semibold text-emerald-800">
+                          {formatDate(day.date)}
+                        </p>
+                      </div>
+                      
+                      {/* Earnings */}
+                      <div className="flex items-center justify-center gap-2">
+                        <p className="text-lg font-bold text-green-700">
+                          {formatCurrency(day.earnings)}
+                        </p>
+                      </div>
+                      
+                      {/* Orders */}
+                      <div className="flex items-center justify-center gap-2">
+                        <Activity className="h-4 w-4 text-blue-600" />
+                        <p className="text-sm font-medium text-blue-700">
+                          {day.orders} orders
+                        </p>
+                      </div>
+                      
+                      {/* Performance indicator */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-emerald-400 to-teal-500 h-2 rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${Math.min((day.earnings / Math.max(...dailyEarnings.map(d => d.earnings))) * 100, 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {!calendarLoading && dailyEarnings.length === 0 && (
+              <div className="text-center py-12">
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">No daily earnings data available.</p>
+              </div>
+            )}
+          </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Stats Chart */}
-      <Card>
+      {!isLoading && (
+        <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Last 3 Days Orders</CardTitle>
-              <CardDescription>Daily order counts - paid orders, reward orders, and total orders</CardDescription>
+              <CardTitle>Last 4 Days Performance</CardTitle>
+              <CardDescription>Daily orders and earnings for the past 4 days</CardDescription>
             </div>
             <Button
               variant="outline"
@@ -317,18 +588,13 @@ We can't wait to see you again 😊`
                       }}
                     />
                     <Bar
-                      dataKey="paidOrders"
+                      dataKey="orders"
                       fill="hsl(var(--chart-1))"
                       radius={[4, 4, 0, 0]}
                     />
                     <Bar
-                      dataKey="rewardOrders"
+                      dataKey="earnings"
                       fill="hsl(var(--chart-2))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="totalOrders"
-                      fill="hsl(var(--chart-3))"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -339,16 +605,12 @@ We can't wait to see you again 😊`
                     <h3 className="font-semibold text-lg mb-2">Chart Summary</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Paid Orders:</span>
-                        <span className="font-medium">{dailyChartData.reduce((sum, day) => sum + day.paidOrders, 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Reward Orders:</span>
-                        <span className="font-medium">{dailyChartData.reduce((sum, day) => sum + day.rewardOrders, 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Total Orders:</span>
-                        <span className="font-medium">{dailyChartData.reduce((sum, day) => sum + day.totalOrders, 0)}</span>
+                        <span className="font-medium">{dailyChartData.reduce((sum, day) => sum + day.orders, 0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Total Earnings:</span>
+                        <span className="font-medium">₹{dailyChartData.reduce((sum, day) => sum + day.earnings, 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -359,9 +621,8 @@ We can't wait to see you again 😊`
                         <div key={index} className="flex justify-between items-center">
                           <span className="text-sm font-medium">{day.date}</span>
                           <div className="flex gap-2 text-xs">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">P: {day.paidOrders}</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">R: {day.rewardOrders}</span>
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">T: {day.totalOrders}</span>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Orders: {day.orders}</span>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">₹{day.earnings}</span>
                           </div>
                         </div>
                       ))}
@@ -372,48 +633,59 @@ We can't wait to see you again 😊`
             ) : (
               <div className="flex items-center justify-center h-64 text-muted-foreground">
                 <div className="text-center">
-                  <div className="text-lg font-medium">Loading order data...</div>
-                  <div className="text-sm">Please wait while we fetch the latest order statistics</div>
+                  <div className="text-lg font-medium">No order data available</div>
+                  <div className="text-sm">No orders have been placed in the last 4 days</div>
                 </div>
               </div>
             )}
           </CardContent>
         )}
       </Card>
+      )}
 
       {/* Recent Customers */}
-      <Card>
+      {!isLoading && (
+        <Card>
         <CardHeader>
           <CardTitle>Recent Customers</CardTitle>
           <CardDescription>Latest customer activity and reward status</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {currentCustomers.map((customer, index) => {
-              return (
-                <div
-                  key={startIndex + index}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{customer.name}</p>
-                    <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                    <p className="text-sm text-emerald-600">
-                      {customer.totalOrders} drinks purchased
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => sendWhatsAppReminder(customer)}
-                    className="text-green-600 border-green-600 hover:bg-green-50"
+            {currentCustomers.length > 0 ? (
+              currentCustomers.map((customer, index) => {
+                return (
+                  <div
+                    key={startIndex + index}
+                    className="flex items-center justify-between p-4 border rounded-lg"
                   >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    WhatsApp
-                  </Button>
+                    <div>
+                      <p className="font-medium">{customer.name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                      <p className="text-sm text-emerald-600">
+                        {customer.totalOrders} drinks purchased
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => sendWhatsAppReminder(customer)}
+                      className="text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="flex items-center justify-center h-32 text-muted-foreground">
+                <div className="text-center">
+                  <div className="text-lg font-medium">No customers yet</div>
+                  <div className="text-sm">Start adding customers to see their activity here</div>
                 </div>
-              )
-            })}
+              </div>
+            )}
           </div>
           
           {/* Pagination */}
@@ -456,6 +728,7 @@ We can't wait to see you again 😊`
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

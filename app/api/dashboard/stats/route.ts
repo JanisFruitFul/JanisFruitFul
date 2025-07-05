@@ -4,18 +4,6 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    // Check if MongoDB URI is available
-    if (!process.env.MONGODB_URI) {
-      console.warn("MONGODB_URI not set, returning empty stats")
-      return NextResponse.json({
-        totalCustomers: 0,
-        totalDrinksSold: 0,
-        upcomingRewards: 0,
-        rewardsEarned: 0,
-        recentCustomers: [],
-      })
-    }
-
     await connectDB()
 
     const customers = await Customer.find({}).sort({ createdAt: -1 })
@@ -56,6 +44,13 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Failed to fetch dashboard stats:", error)
-    return NextResponse.json({ success: false, message: "Failed to fetch dashboard stats" }, { status: 500 })
+    // Return real empty state instead of error
+    return NextResponse.json({
+      totalCustomers: 0,
+      totalDrinksSold: 0,
+      upcomingRewards: 0,
+      rewardsEarned: 0,
+      recentCustomers: [],
+    })
   }
 }

@@ -16,7 +16,6 @@ const navigation = [
   { name: "Rewards", href: "/dashboard/rewards", icon: Gift },
   { name: "Shop", href: "/dashboard/shop", icon: ShoppingBag },
   { name: "Earnings", href: "/dashboard/earnings", icon: DollarSign },
-  { name: "Add Items", href: "/dashboard/add-item", icon: PlusCircle },
   { name: "Manage Items", href: "/dashboard/manage-items", icon: Settings },
 ]
 
