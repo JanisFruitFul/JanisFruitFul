@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
 import { Calendar, ChevronRight, Gift, IndianRupee, MessageCircle, Search, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,6 +35,7 @@ export default function CustomersPage() {
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showDetails, setShowDetails] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     fetchCustomers()
@@ -59,6 +61,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch(getApiUrl('api/customers'))
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -69,6 +72,8 @@ export default function CustomersPage() {
     } catch (error) {
       console.error("Failed to fetch customers:", error)
       setCustomers([]) // Set empty array on error
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -100,6 +105,41 @@ We can't wait to see you again 😊`
     setShowDetails(true)
   }
 
+  // Skeleton loader component
+  const CustomerCardSkeleton = () => (
+    <Card className="animate-pulse">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <Skeleton className="h-6 w-32 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded" />
+            <Skeleton className="h-4 w-4" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <Skeleton className="h-8 w-12 mx-auto mb-1" />
+            <Skeleton className="h-3 w-16 mx-auto" />
+          </div>
+          <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <Skeleton className="h-8 w-12 mx-auto mb-1" />
+            <Skeleton className="h-3 w-20 mx-auto" />
+          </div>
+        </div>
+        
+        <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <Skeleton className="h-8 w-16 mx-auto mb-1" />
+          <Skeleton className="h-3 w-20 mx-auto" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -118,67 +158,77 @@ We can't wait to see you again 😊`
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredCustomers.map((customer) => {
-          return (
-            <Card
-              key={customer._id}
-              className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02] group"
-              onClick={() => handleCustomerClick(customer)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg group-hover:text-emerald-600 transition-colors">
-                      {customer.name}
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-1">
-                      <span>{customer.phone}</span>
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => sendWhatsAppReminder(customer, e)}
-                      className="text-green-600 border-green-600 hover:bg-green-50 p-2"
-                    >
-                      <MessageCircle className="h-3 w-3" />
-                    </Button>
-                    <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                    <div className="text-2xl font-bold text-emerald-600">{customer.totalOrders}</div>
-                    <div className="text-xs text-gray-600">Total Orders</div>
-                  </div>
-                  <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                    <div className="text-2xl font-bold text-emerald-600">{customer.rewardsEarned}</div>
-                    <div className="text-xs text-gray-600">Rewards Earned</div>
-                  </div>
-                </div>
-                
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">₹{getTotalSpent(customer)}</div>
-                  <div className="text-xs text-gray-600">Total Spent</div>
-                </div>
-
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {filteredCustomers.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="h-8 w-8 text-gray-400" />
-          </div>
-          <p className="text-gray-500 text-lg">No customers found matching your search.</p>
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <CustomerCardSkeleton key={index} />
+          ))}
         </div>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredCustomers.map((customer) => {
+              return (
+                <Card
+                  key={customer._id}
+                  className="hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.02] group"
+                  onClick={() => handleCustomerClick(customer)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg group-hover:text-emerald-600 transition-colors">
+                          {customer.name}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1">
+                          <span>{customer.phone}</span>
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => sendWhatsAppReminder(customer, e)}
+                          className="text-green-600 border-green-600 hover:bg-green-50 p-2"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                        </Button>
+                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                        <div className="text-2xl font-bold text-emerald-600">{customer.totalOrders}</div>
+                        <div className="text-xs text-gray-600">Total Orders</div>
+                      </div>
+                      <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                        <div className="text-2xl font-bold text-emerald-600">{customer.rewardsEarned}</div>
+                        <div className="text-xs text-gray-600">Rewards Earned</div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">₹{getTotalSpent(customer)}</div>
+                      <div className="text-xs text-gray-600">Total Spent</div>
+                    </div>
+
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {filteredCustomers.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 text-lg">No customers found matching your search.</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Customer Details Modal */}

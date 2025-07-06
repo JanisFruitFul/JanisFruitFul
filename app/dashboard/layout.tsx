@@ -4,6 +4,7 @@ import type React from "react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
 import { DollarSign, Gift, Home, LogOut, Menu, PlusCircle, Settings, ShoppingBag, User, Users, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -26,10 +27,10 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const { logout } = useAuth()
 
   const handleLogout = () => {
-    // Clear auth and redirect to login
-    window.location.href = "/login"
+    logout()
   }
 
   return (

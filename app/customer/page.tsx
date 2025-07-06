@@ -2,10 +2,85 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, Coffee, Gift, Star } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function CustomerPage() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Hero Section Skeleton */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white">
+          <div className="max-w-7xl mx-auto px-4 py-16 sm:py-24">
+            <div className="text-center">
+              <Skeleton className="h-16 w-96 mx-auto mb-6 bg-white/20" />
+              <Skeleton className="h-8 w-2/3 mx-auto mb-8 bg-white/20" />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Skeleton className="h-12 w-48 bg-white/20 rounded-full" />
+                <Skeleton className="h-12 w-48 bg-white/20 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          {/* Coming Soon Card Skeleton */}
+          <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-8">
+              <Skeleton className="w-24 h-24 rounded-full mx-auto mb-6 bg-gray-200" />
+              <Skeleton className="h-12 w-64 mx-auto mb-4 bg-gray-200" />
+              <Skeleton className="h-6 w-2/3 mx-auto bg-gray-200" />
+            </CardHeader>
+            
+            <CardContent className="text-center space-y-8">
+              {/* Features Preview Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="bg-gray-50 rounded-xl p-6">
+                    <Skeleton className="w-12 h-12 rounded-full mx-auto mb-4 bg-gray-200" />
+                    <Skeleton className="h-6 w-32 mx-auto mb-2 bg-gray-200" />
+                    <Skeleton className="h-4 w-full bg-gray-200" />
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Buttons Skeleton */}
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-48 mx-auto bg-gray-200" />
+                <Skeleton className="h-12 w-48 mx-auto bg-gray-200" />
+              </div>
+
+              {/* Progress Indicator Skeleton */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="flex items-center justify-center gap-4">
+                  {[...Array(4)].map((_, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Skeleton className="w-3 h-3 rounded-full bg-gray-200" />
+                      <Skeleton className="h-4 w-16 bg-gray-200" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Hero Section */}

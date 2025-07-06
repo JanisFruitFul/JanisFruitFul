@@ -15,9 +15,10 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Bar, BarChart } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
+import { generatePagination } from "@/lib/utils"
 import {
   ChevronLeft,
   ChevronRight,
@@ -105,6 +106,7 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [calendarLoading, setCalendarLoading] = useState(false)
+  const [activeChart, setActiveChart] = useState<"earnings" | "orders">("earnings")
   const customersPerPage = 3
 
   useEffect(() => {
@@ -183,20 +185,16 @@ export default function DashboardPage() {
 
   const fetchChartData = async () => {
     try {
-      const response = await fetch(getApiUrl('api/dashboard/chart-data'))
+      const response = await fetch(getApiUrl('api/earnings?period=month'))
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
       console.log('Chart data received:', data)
       
-      // Ensure we have real data, not empty array
-      if (Array.isArray(data) && data.length > 0) {
-        setDailyChartData(data)
-      } else {
-        // If no real data, show empty state instead of mock data
-        setDailyChartData([])
-      }
+      // Use the same data as the calendar
+      const chartData = data.dailyEarnings || []
+      setDailyChartData(chartData)
     } catch (error) {
       console.error("Failed to fetch chart data:", error)
       // Don't set fallback data - show empty state instead
@@ -274,15 +272,15 @@ We can't wait to see you again 😊`
     });
   };
 
-  // Chart configuration
+  // Chart configuration for interactive bar chart
   const chartConfig = {
+    earnings: {
+      label: "Earnings",
+      color: "var(--chart-1)",
+    },
     orders: {
       label: "Orders",
-      color: "hsl(var(--chart-1))",
-    },
-    earnings: {
-      label: "Earnings (₹)",
-      color: "hsl(var(--chart-2))",
+      color: "var(--chart-2)",
     },
   }
 
@@ -543,104 +541,106 @@ We can't wait to see you again 😊`
 
       {/* Stats Chart */}
       {!isLoading && (
-        <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Last 4 Days Performance</CardTitle>
-              <CardDescription>Daily orders and earnings for the past 4 days</CardDescription>
+        <Card className="py-0">
+          <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6 pt-4 pb-3 sm:!py-0">
+              <CardTitle>Weekly Earnings Chart</CardTitle>
+              <CardDescription>
+                Interactive chart showing daily earnings and orders
+              </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowChart(!showChart)}
-              className="flex items-center gap-2"
-            >
-              {showChart ? "Hide Chart" : "Show Chart"}
-            </Button>
-          </div>
-        </CardHeader>
-        {showChart && (
-          <CardContent>
+            <div className="flex">
+              {["earnings", "orders"].map((key) => {
+                const chart = key as "earnings" | "orders"
+                const total = dailyChartData.reduce((acc, curr) => acc + curr[chart], 0)
+                return (
+                  <button
+                    key={chart}
+                    data-active={activeChart === chart}
+                    className={`relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6 transition-all duration-200 ${
+                      activeChart === chart 
+                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => setActiveChart(chart)}
+                  >
+                    <span className="text-muted-foreground text-xs">
+                      {chartConfig[chart].label}
+                    </span>
+                    <span className="text-lg leading-none font-bold sm:text-3xl">
+                      {chart === "earnings" 
+                        ? `₹${total.toLocaleString()}`
+                        : total.toLocaleString()
+                      }
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </CardHeader>
+          <CardContent className="px-2 sm:p-6">
             {dailyChartData.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <ChartContainer config={chartConfig}>
-                    <BarChart data={dailyChartData}>
-                    <ChartTooltip
-                      cursor={{
-                        fill: "hsl(var(--muted))",
-                        opacity: 0.1,
-                      }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <ChartTooltipContent
-                              active={active}
-                              payload={payload}
-                              label={payload[0].payload.date}
-                              formatter={(value, name) => {
-                                return [value, chartConfig[name as keyof typeof chartConfig]?.label || name]
-                              }}
-                            />
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar
-                      dataKey="orders"
-                      fill="hsl(var(--chart-1))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="earnings"
-                      fill="hsl(var(--chart-2))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ChartContainer>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-lg mb-2">Chart Summary</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Orders:</span>
-                        <span className="font-medium">{dailyChartData.reduce((sum, day) => sum + day.orders, 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Earnings:</span>
-                        <span className="font-medium">₹{dailyChartData.reduce((sum, day) => sum + day.earnings, 0).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold text-lg mb-2 text-blue-800">Daily Breakdown</h3>
-                    <div className="space-y-2">
-                      {dailyChartData.map((day, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{day.date}</span>
-                          <div className="flex gap-2 text-xs">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Orders: {day.orders}</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded">₹{day.earnings}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ChartContainer
+                config={chartConfig}
+                className="aspect-auto h-[250px] w-full"
+              >
+                <BarChart
+                  accessibilityLayer
+                  data={dailyChartData}
+                  margin={{
+                    left: 12,
+                    right: 12,
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    minTickGap={32}
+                    tickFormatter={(value) => {
+                      const date = new Date(value)
+                      return date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    }}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        className="w-[150px]"
+                        nameKey="earnings"
+                        labelFormatter={(value) => {
+                          return new Date(value).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        }}
+                        formatter={(value, name) => {
+                          if (name === "earnings") {
+                            return [formatCurrency(Number(value)), "Earnings"]
+                          }
+                          return [value, "Orders"]
+                        }}
+                      />
+                    }
+                  />
+                  <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} />
+                </BarChart>
+              </ChartContainer>
             ) : (
               <div className="flex items-center justify-center h-64 text-muted-foreground">
                 <div className="text-center">
-                  <div className="text-lg font-medium">No order data available</div>
-                  <div className="text-sm">No orders have been placed in the last 4 days</div>
+                  <div className="text-lg font-medium">No earnings data available</div>
+                  <div className="text-sm">No earnings data is available for the selected period</div>
                 </div>
               </div>
             )}
           </CardContent>
-        )}
-      </Card>
+        </Card>
       )}
 
       {/* Recent Customers */}
@@ -702,16 +702,25 @@ We can't wait to see you again 😊`
                   Previous
                 </Button>
                 <div className="flex items-center space-x-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(page)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {page}
-                    </Button>
+                  {generatePagination(currentPage, totalPages).map((page, index) => (
+                    <div key={index}>
+                      {page === '...' ? (
+                        <span className="px-2 py-1 text-sm text-muted-foreground">...</span>
+                      ) : (
+                        <Button
+                          variant={currentPage === page ? "outline" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(page as number)}
+                          className={`w-8 h-8 p-0 ${
+                            currentPage === page 
+                              ? 'bg-green-600 text-white border-green-600 hover:bg-green-700 hover:border-green-700' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
                 <Button

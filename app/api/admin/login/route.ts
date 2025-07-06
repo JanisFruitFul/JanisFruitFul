@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { type NextRequest, NextResponse } from "next/server"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+const JWT_SECRET = process.env.JWT_SECRET || "your_super_secret_jwt_key_here"
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,26 +34,25 @@ export async function POST(request: NextRequest) {
     admin.lastLogin = new Date()
     await admin.save()
 
-    // Generate JWT token
-    const token = jwt.sign({ adminId: admin._id, email: admin.email }, JWT_SECRET, { expiresIn: "7d" })
+    // Generate JWT token with the structure expected by the frontend
+    const token = jwt.sign({ 
+      user: {
+        id: admin._id.toString(),
+        email: admin.email,
+        role: admin.role || 'admin'
+      }
+    }, JWT_SECRET, { expiresIn: "7d" })
 
     const response = NextResponse.json({
       success: true,
       message: "Login successful",
+      token: token, // Include token in response body for client-side storage
       user: {
         id: admin._id,
         email: admin.email,
         username: admin.username,
         role: admin.role,
       },
-    })
-
-    // Set HTTP-only cookie
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
     })
 
     return response

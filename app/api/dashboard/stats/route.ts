@@ -1,9 +1,16 @@
 import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
 import { NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Check authentication
+    const authResult = await requireAuth(request as any)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
 
     const customers = await Customer.find({}).sort({ createdAt: -1 })

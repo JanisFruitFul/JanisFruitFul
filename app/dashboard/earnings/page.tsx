@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getApiUrl } from "@/lib/config";
 import {
     Activity,
@@ -22,9 +23,15 @@ import {
     Search,
     TrendingUp,
     Users,
-    X
+    X,
+    Gift,
+    ArrowUpRight,
+    ArrowDownRight,
+    Eye,
+    Download
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Line, LineChart, PieChart, Pie, Cell } from "recharts";
 
 interface EarningsData {
   totalEarnings: number;
@@ -91,6 +98,8 @@ export default function EarningsPage() {
   const [transactionCategory, setTransactionCategory] = useState<string>("all");
   const [transactionSort, setTransactionSort] = useState<string>("date-desc");
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Drinks scroll container - no pagination needed
 
   useEffect(() => {
     fetchEarningsData();
@@ -115,6 +124,17 @@ export default function EarningsPage() {
       
       const data = await response.json();
       setEarningsData(data);
+      
+      // Debug after setting data
+      setTimeout(() => {
+        console.log('Frontend Earnings Data:', {
+          totalEarnings: data.totalEarnings,
+          totalOrders: data.totalOrders,
+          transactionsCount: data.transactions?.length || 0,
+          sampleTransactions: data.transactions?.slice(0, 3) || [],
+          calendarData: getCalendarData()
+        });
+      }, 100);
     } catch (error) {
       console.error("Failed to fetch earnings data:", error);
       setError(error instanceof Error ? error.message : 'Failed to fetch earnings data');
@@ -210,6 +230,235 @@ export default function EarningsPage() {
     return transactionSearch.trim() || transactionType !== "all" || transactionCategory !== "all";
   };
 
+  // Drinks data - show all drinks in scrollable container
+  const allDrinks = earningsData?.topDrinks || [];
+
+  // Export filtered transactions to CSV
+  const exportToCSV = () => {
+    const filteredData = getFilteredTransactions();
+    
+    if (filteredData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    // Define CSV headers
+    const headers = [
+      'Transaction ID',
+      'Customer Name',
+      'Customer Phone',
+      'Item Name',
+      'Drink Type',
+      'Price (₹)',
+      'Date',
+      'Transaction Type'
+    ];
+
+    // Convert data to CSV format
+    const csvContent = [
+      headers.join(','),
+      ...filteredData.map(transaction => [
+        transaction._id,
+        `"${transaction.customerName}"`,
+        transaction.customerPhone,
+        `"${transaction.itemName}"`,
+        `"${transaction.drinkType}"`,
+        transaction.price,
+        transaction.date,
+        transaction.isReward ? 'Reward' : 'Purchase'
+      ].join(','))
+    ].join('\n');
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Function to get calendar data for the current month
+  const getCalendarData = () => {
+    if (!earningsData?.transactions) return [];
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Get all days in the current month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    const calendarData = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      calendarData.push({
+        date: null,
+        dayOfMonth: null,
+        dayName: '',
+        customers: [],
+        totalOrders: 0,
+        totalRewards: 0,
+        totalEarnings: 0,
+        isEmpty: true
+      });
+    }
+    
+    // Add all days in the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentYear, currentMonth, day);
+      const dateString = date.toISOString().split('T')[0];
+      
+      // Filter transactions for this specific date
+      const dayTransactions = earningsData.transactions.filter(t => 
+        t.date === dateString
+      );
+      
+      // Group by customer for this day
+      const customerGroups = dayTransactions.reduce((acc, transaction) => {
+        const customerKey = `${transaction.customerName}-${transaction.customerPhone}`;
+        if (!acc[customerKey]) {
+          acc[customerKey] = {
+            customerName: transaction.customerName,
+            customerPhone: transaction.customerPhone,
+            orders: 0,
+            rewards: 0,
+            totalSpent: 0
+          };
+        }
+        
+        if (transaction.isReward) {
+          acc[customerKey].rewards += 1;
+        } else {
+          acc[customerKey].orders += 1;
+          acc[customerKey].totalSpent += transaction.price;
+        }
+        
+        return acc;
+      }, {} as Record<string, { customerName: string; customerPhone: string; orders: number; rewards: number; totalSpent: number }>);
+      
+      const dayData = {
+        date: dateString,
+        dayOfMonth: day,
+        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        customers: Object.values(customerGroups),
+        totalOrders: dayTransactions.filter(t => !t.isReward).length,
+        totalRewards: dayTransactions.filter(t => t.isReward).length,
+        totalEarnings: dayTransactions.filter(t => !t.isReward).reduce((sum, t) => sum + t.price, 0),
+        isEmpty: false
+      };
+      
+      calendarData.push(dayData);
+    }
+    
+    return calendarData;
+  };
+
+  // Function to render calendar grid
+  const renderCalendarGrid = () => {
+    const calendarData = getCalendarData();
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    return (
+      <div className="space-y-4">
+        {/* Calendar Header */}
+        <div className="grid grid-cols-7 gap-2 mb-4">
+          {weekDays.map((day) => (
+            <div key={day} className="text-center p-3 bg-gray-100 rounded-lg">
+              <p className="font-semibold text-gray-700 text-sm">{day}</p>
+            </div>
+          ))}
+        </div>
+        
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-2">
+          {calendarData.map((dayData, index) => (
+            <div key={index} className={`min-h-[120px] border rounded-lg p-2 ${
+              dayData.isEmpty 
+                ? 'bg-gray-50 border-gray-200' 
+                : 'bg-white border-gray-300 hover:border-blue-400 hover:shadow-md transition-all duration-200'
+            }`}>
+              {dayData.isEmpty ? (
+                <div className="h-full flex items-center justify-center">
+                  <span className="text-gray-400 text-xs">-</span>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  {/* Day Header */}
+                  <div className="text-center mb-2">
+                    <p className="font-bold text-lg text-gray-900">{dayData.dayOfMonth}</p>
+                    <p className="text-xs text-gray-500">{dayData.dayName}</p>
+                  </div>
+                  
+                  {/* Daily Summary */}
+                  {(dayData.totalOrders > 0 || dayData.totalRewards > 0) && (
+                    <div className="flex justify-between items-center mb-2 text-xs">
+                      <div className="text-center">
+                        <p className="font-semibold text-blue-600">{dayData.totalOrders}</p>
+                        <p className="text-gray-500">Orders</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-green-600">{dayData.totalRewards}</p>
+                        <p className="text-gray-500">Rewards</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-purple-600">₹{dayData.totalEarnings}</p>
+                        <p className="text-gray-500">Earnings</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Customer List */}
+                  {dayData.customers.length > 0 ? (
+                    <div className="flex-1 overflow-y-auto space-y-1">
+                      {dayData.customers.slice(0, 3).map((customer, customerIndex) => (
+                        <div key={customerIndex} className="bg-gray-50 rounded p-1 text-xs">
+                          <p className="font-medium text-gray-900 truncate">{customer.customerName}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            {customer.orders > 0 && (
+                              <span className="bg-blue-100 text-blue-700 px-1 rounded text-xs">
+                                {customer.orders}
+                              </span>
+                            )}
+                            {customer.rewards > 0 && (
+                              <span className="bg-green-100 text-green-700 px-1 rounded text-xs flex items-center gap-1">
+                                <Gift className="h-2 w-2" />
+                                {customer.rewards}
+                              </span>
+                            )}
+                            {customer.totalSpent > 0 && (
+                              <span className="text-purple-600 font-medium text-xs">
+                                ₹{customer.totalSpent}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {dayData.customers.length > 3 && (
+                        <div className="text-center text-xs text-gray-500">
+                          +{dayData.customers.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-gray-400 text-xs text-center">No transactions</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
@@ -265,184 +514,323 @@ export default function EarningsPage() {
   const filteredTransactions = getFilteredTransactions();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Modern Header */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Earnings Analytics</h1>
-              <p className="text-gray-600 text-lg">Track your revenue and performance metrics</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    Earnings Dashboard
+                  </h1>
+                  <p className="text-slate-600 text-lg mt-1">Comprehensive revenue analytics and insights</p>
+                </div>
+              </div>
             </div>
             
-            {/* Time Filter */}
-            <div className="flex items-center gap-3 w-full lg:w-auto">
-              <Select 
-                value={timeFilter.period} 
-                onValueChange={(value) => setTimeFilter(prev => ({ ...prev, period: value as any }))}
-              >
-                <SelectTrigger className="w-full lg:w-48 h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="year">This Year</SelectItem>
-                  <SelectItem value="all">All Time</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Enhanced Time Filter */}
+            <div className="flex items-center gap-4 w-full lg:w-auto">
+              <div className="flex items-center gap-2 bg-slate-100 rounded-2xl p-1">
+                <Select 
+                  value={timeFilter.period} 
+                  onValueChange={(value) => setTimeFilter(prev => ({ ...prev, period: value as any }))}
+                >
+                  <SelectTrigger className="w-48 h-12 border-0 bg-transparent focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
+                    <SelectItem value="month">This Month</SelectItem>
+                    <SelectItem value="year">This Year</SelectItem>
+                    <SelectItem value="all">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button 
                 variant="outline" 
                 size="lg"
                 onClick={fetchEarningsData}
-                className="shrink-0 h-12 px-4"
+                className="shrink-0 h-12 px-6 bg-white hover:bg-slate-50 border-slate-200"
               >
-                <RefreshCw className="h-5 w-5" />
+                <RefreshCw className="h-5 w-5 mr-2" />
+                Refresh
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-green-800 mb-2">Total Earnings</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-green-700 mb-1">
-                    {formatCurrency(earningsData.totalEarnings)}
-                  </p>
-                  <p className="text-sm text-green-600">
-                    {getPeriodLabel(timeFilter.period)}
-                  </p>
+        {/* Modern Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-teal-700/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <DollarSign className="h-6 w-6" />
                 </div>
-                <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center">
-                  <DollarSign className="h-7 w-7 text-green-600" />
-                </div>
+                <ArrowUpRight className="h-5 w-5 opacity-60" />
+              </div>
+              <div>
+                <p className="text-emerald-100 text-sm font-medium mb-2">Total Earnings</p>
+                <p className="text-3xl lg:text-4xl font-bold mb-1">
+                  {formatCurrency(earningsData.totalEarnings)}
+                </p>
+                <p className="text-emerald-100 text-sm">
+                  {getPeriodLabel(timeFilter.period)}
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-800 mb-2">Total Orders</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-blue-700 mb-1">
-                    {formatNumber(earningsData.totalOrders)}
-                  </p>
-                  <p className="text-sm text-blue-600">
-                    Orders placed
-                  </p>
+          <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-indigo-700/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Activity className="h-6 w-6" />
                 </div>
-                <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center">
-                  <Activity className="h-7 w-7 text-blue-600" />
-                </div>
+                <ArrowUpRight className="h-5 w-5 opacity-60" />
+              </div>
+              <div>
+                <p className="text-blue-100 text-sm font-medium mb-2">Total Orders</p>
+                <p className="text-3xl lg:text-4xl font-bold mb-1">
+                  {formatNumber(earningsData.totalOrders)}
+                </p>
+                <p className="text-blue-100 text-sm">
+                  Orders placed
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 via-violet-50 to-fuchsia-50 border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-purple-800 mb-2">Average Order</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-purple-700 mb-1">
-                    {formatCurrency(earningsData.averageOrderValue)}
-                  </p>
-                  <p className="text-sm text-purple-600">
-                    Per order
-                  </p>
+          <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-500 to-violet-600 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-violet-700/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6" />
                 </div>
-                <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <TrendingUp className="h-7 w-7 text-purple-600" />
-                </div>
+                <ArrowUpRight className="h-5 w-5 opacity-60" />
+              </div>
+              <div>
+                <p className="text-purple-100 text-sm font-medium mb-2">Average Order</p>
+                <p className="text-3xl lg:text-4xl font-bold mb-1">
+                  {formatCurrency(earningsData.averageOrderValue)}
+                </p>
+                <p className="text-purple-100 text-sm">
+                  Per order
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 border-orange-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-orange-800 mb-2">Top Customers</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-orange-700 mb-1">
-                    {earningsData.topCustomers.length}
-                  </p>
-                  <p className="text-sm text-orange-600">
-                    High-value customers
-                  </p>
+          <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-orange-500 to-amber-600 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 to-amber-700/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Users className="h-6 w-6" />
                 </div>
-                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center">
-                  <Users className="h-7 w-7 text-orange-600" />
-                </div>
+                <ArrowUpRight className="h-5 w-5 opacity-60" />
+              </div>
+              <div>
+                <p className="text-orange-100 text-sm font-medium mb-2">Top Customers</p>
+                <p className="text-3xl lg:text-4xl font-bold mb-1">
+                  {earningsData.topCustomers.length}
+                </p>
+                <p className="text-orange-100 text-sm">
+                  High-value customers
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Detailed Analytics Tabs */}
-        <Card className="shadow-sm border border-gray-200 rounded-2xl overflow-hidden">
+        {/* Modern Analytics Tabs */}
+        <Card className="shadow-lg border-0 rounded-3xl overflow-hidden bg-white">
           <Tabs defaultValue="overview" className="w-full">
-            <CardHeader className="pb-0 bg-gray-50">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto p-2 bg-white rounded-xl shadow-sm">
-                <TabsTrigger value="overview" className="text-sm font-medium data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Overview</TabsTrigger>
-                <TabsTrigger value="customers" className="text-sm font-medium data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Customers</TabsTrigger>
-                <TabsTrigger value="drinks" className="text-sm font-medium data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Drinks</TabsTrigger>
-                <TabsTrigger value="trends" className="text-sm font-medium data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Trends</TabsTrigger>
-                <TabsTrigger value="transactions" className="text-sm font-medium data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700">Transactions</TabsTrigger>
+            <CardHeader className="pb-0 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Analytics Dashboard</h2>
+                  <p className="text-slate-600">Detailed insights and performance metrics</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-white border-slate-200 hover:bg-slate-50"
+                  onClick={exportToCSV}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </Button>
+              </div>
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1 bg-white rounded-2xl shadow-sm border border-slate-200">
+                <TabsTrigger value="overview" className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all">Overview</TabsTrigger>
+                <TabsTrigger value="customers" className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white rounded-xl transition-all">Customers</TabsTrigger>
+                <TabsTrigger value="drinks" className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white rounded-xl transition-all">Drinks</TabsTrigger>
+                <TabsTrigger value="trends" className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-xl transition-all">Trends</TabsTrigger>
+                <TabsTrigger value="transactions" className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-gray-600 data-[state=active]:text-white rounded-xl transition-all">Transactions</TabsTrigger>
               </TabsList>
             </CardHeader>
 
-            <CardContent className="p-6">
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <Card className="border border-gray-200 rounded-xl shadow-sm">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <Calendar className="h-6 w-6 text-emerald-600" />
-                        Monthly Earnings
+            <CardContent className="p-8">
+              <TabsContent value="overview" className="space-y-8">
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
+                    <CardHeader className="pb-6">
+                      <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                        <BarChart3 className="h-6 w-6 text-emerald-600" />
+                        Revenue Trends
                       </CardTitle>
+                      <CardDescription className="text-slate-600">
+                        Monthly earnings performance
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        {earningsData.monthlyEarnings.slice(0, 6).map((month, index) => (
-                          <div key={month.month} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                            <div>
-                              <p className="font-semibold text-gray-900 text-lg">{month.month}</p>
-                              <p className="text-sm text-gray-500">{month.orders} orders</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-green-600 text-lg">
-                                {formatCurrency(month.earnings)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={earningsData.monthlyEarnings.slice(0, 6)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="month" 
+                              tick={{ fontSize: 12, fill: '#64748b' }}
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              tick={{ fontSize: 12, fill: '#64748b' }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(value) => `₹${value}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                              }}
+                              formatter={(value: any) => [`₹${value}`, 'Earnings']}
+                            />
+                            <Bar 
+                              dataKey="earnings" 
+                              fill="url(#colorGradient)"
+                              radius={[4, 4, 0, 0]}
+                            />
+                            <defs>
+                              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" />
+                                <stop offset="100%" stopColor="#059669" />
+                              </linearGradient>
+                            </defs>
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border border-gray-200 rounded-xl shadow-sm">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="flex items-center gap-3 text-xl">
-                        <BarChart3 className="h-6 w-6 text-blue-600" />
+                  <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
+                    <CardHeader className="pb-6">
+                      <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                        <TrendingUp className="h-6 w-6 text-blue-600" />
                         Daily Performance
                       </CardTitle>
+                      <CardDescription className="text-slate-600">
+                        Last 7 days earnings trend
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={earningsData.dailyEarnings.slice(0, 7)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 12, fill: '#64748b' }}
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              tick={{ fontSize: 12, fill: '#64748b' }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(value) => `₹${value}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                              }}
+                              formatter={(value: any) => [`₹${value}`, 'Earnings']}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="earnings" 
+                              stroke="url(#lineGradient)"
+                              strokeWidth={3}
+                              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                            />
+                            <defs>
+                              <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#3b82f6" />
+                                <stop offset="100%" stopColor="#1d4ed8" />
+                              </linearGradient>
+                            </defs>
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="customers" className="space-y-8">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+                  {/* Top Customers Table */}
+                  <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
+                    <CardHeader className="pb-6">
+                      <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                        <Users className="h-6 w-6 text-emerald-600" />
+                        Top Customers
+                      </CardTitle>
+                      <CardDescription className="text-slate-600">
+                        Customers who have spent the most money
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {earningsData.dailyEarnings.slice(0, 7).map((day, index) => (
-                          <div key={day.date} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                            <div>
-                              <p className="font-semibold text-gray-900 text-lg">{day.date}</p>
-                              <p className="text-sm text-gray-500">{day.orders} orders</p>
+                        {earningsData.topCustomers.map((customer, index) => (
+                          <div key={customer.phone} className="flex items-center justify-between p-4 bg-white rounded-2xl hover:shadow-md transition-all duration-200 border border-slate-100">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center ${
+                                index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                                index === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-500' :
+                                index === 2 ? 'bg-gradient-to-br from-amber-600 to-orange-600' :
+                                'bg-gradient-to-br from-blue-500 to-indigo-600'
+                              }`}>
+                                <span className="text-white font-bold text-xs sm:text-sm">
+                                  {index + 1}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-900 text-sm sm:text-base">{customer.name}</p>
+                                <p className="text-slate-500 text-xs sm:text-sm">{customer.phone}</p>
+                                <p className="text-xs sm:text-sm text-emerald-600 font-medium">{customer.orderCount} orders</p>
+                              </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-blue-600 text-lg">
-                                {formatCurrency(day.earnings)}
+                              <p className="text-lg sm:text-xl font-bold text-emerald-600">
+                                {formatCurrency(customer.totalSpent)}
                               </p>
                             </div>
                           </div>
@@ -453,82 +841,50 @@ export default function EarningsPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="customers" className="space-y-6">
-                <Card className="border border-gray-200 rounded-xl shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-xl">
-                      <Users className="h-6 w-6 text-emerald-600" />
-                      Top Customers by Revenue
-                    </CardTitle>
-                    <CardDescription className="text-lg">
-                      Customers who have spent the most money
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {earningsData.topCustomers.map((customer, index) => (
-                        <div key={customer.phone} className="flex items-center justify-between p-5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
-                              <span className="text-emerald-600 font-bold text-lg">
-                                {index + 1}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-900 text-lg">{customer.name}</p>
-                              <p className="text-gray-500">{customer.phone}</p>
-                              <p className="text-sm text-emerald-600 font-medium">{customer.orderCount} orders</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-green-600">
-                              {formatCurrency(customer.totalSpent)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="drinks" className="space-y-6">
-                <Card className="border border-gray-200 rounded-xl shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-xl">
+              <TabsContent value="drinks" className="space-y-8">
+                <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
                       <Coffee className="h-6 w-6 text-purple-600" />
                       Top Performing Drinks
                     </CardTitle>
-                    <CardDescription className="text-lg">
+                    <CardDescription className="text-slate-600">
                       Drinks that generate the most revenue
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {earningsData.topDrinks.map((drink, index) => (
-                        <div key={drink.name} className="flex items-center justify-between p-5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2">
+                      {allDrinks.map((drink, index) => (
+                        <div key={drink.name} className="flex items-center justify-between p-5 bg-white rounded-2xl hover:shadow-md transition-all duration-200 border border-slate-100">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                              <span className="text-purple-600 font-bold text-lg">
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center ${
+                              index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                              index === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-500' :
+                              index === 2 ? 'bg-gradient-to-br from-amber-600 to-orange-600' :
+                              'bg-gradient-to-br from-purple-500 to-violet-600'
+                            }`}>
+                              <span className="text-white font-bold text-base sm:text-lg">
                                 {index + 1}
                               </span>
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900 text-lg">{drink.name}</p>
-                              <Badge variant="secondary" className="text-sm mt-1 bg-purple-100 text-purple-700">
+                              <p className="font-semibold text-slate-900 text-base sm:text-lg">{drink.name}</p>
+                              <Badge variant="secondary" className="text-xs sm:text-sm mt-1 bg-purple-100 text-purple-700 border-purple-200">
                                 {drink.category}
                               </Badge>
-                              <p className="text-sm text-gray-500 mt-1">{drink.totalSold} sold</p>
+                              <p className="text-xs sm:text-sm text-slate-500 mt-1">{drink.totalSold} sold</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-purple-600">
+                            <p className="text-lg sm:text-2xl font-bold text-purple-600">
                               {formatCurrency(drink.totalRevenue)}
                             </p>
                           </div>
                         </div>
                       ))}
                     </div>
+
+
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -598,16 +954,16 @@ export default function EarningsPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="transactions" className="space-y-6">
-                <Card className="border border-gray-200 rounded-xl shadow-sm">
+              <TabsContent value="transactions" className="space-y-8">
+                <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
                   <CardHeader>
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                       <div>
-                        <CardTitle className="flex items-center gap-3 text-xl">
-                          <Activity className="h-6 w-6 text-emerald-600" />
-                          All Transactions
+                        <CardTitle className="flex items-center gap-3 text-2xl text-slate-900">
+                          <Activity className="h-7 w-7 text-emerald-600" />
+                          Transaction History
                         </CardTitle>
-                        <CardDescription className="text-lg">
+                        <CardDescription className="text-slate-600 text-lg">
                           Complete list of all transactions. Showing {filteredTransactions.length} of {earningsData.transactions.length} transactions.
                         </CardDescription>
                       </div>
@@ -617,7 +973,7 @@ export default function EarningsPage() {
                             variant="outline" 
                             size="sm" 
                             onClick={clearTransactionFilters}
-                            className="shrink-0"
+                            className="shrink-0 bg-white border-slate-200 hover:bg-slate-50"
                           >
                             <X className="h-4 w-4 mr-2" />
                             Clear Filters
@@ -627,7 +983,7 @@ export default function EarningsPage() {
                           variant="outline" 
                           size="sm" 
                           onClick={() => setShowFilters(!showFilters)}
-                          className="shrink-0"
+                          className="shrink-0 bg-white border-slate-200 hover:bg-slate-50"
                         >
                           <Filter className="h-4 w-4 mr-2" />
                           {showFilters ? 'Hide' : 'Show'} Filters
@@ -637,21 +993,21 @@ export default function EarningsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {/* Transaction Filters */}
+                    {/* Enhanced Transaction Filters */}
                     {showFilters && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-6 bg-white rounded-2xl border border-slate-200">
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
                           <Input
                             placeholder="Search transactions..."
                             value={transactionSearch}
                             onChange={(e) => setTransactionSearch(e.target.value)}
-                            className="pl-10 h-12"
+                            className="pl-10 h-12 border-slate-200 focus:border-emerald-500"
                           />
                         </div>
 
                         <Select value={transactionType} onValueChange={setTransactionType}>
-                          <SelectTrigger className="h-12">
+                          <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500">
                             <SelectValue placeholder="Type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -662,7 +1018,7 @@ export default function EarningsPage() {
                         </Select>
 
                         <Select value={transactionCategory} onValueChange={setTransactionCategory}>
-                          <SelectTrigger className="h-12">
+                          <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500">
                             <SelectValue placeholder="Category" />
                           </SelectTrigger>
                           <SelectContent>
@@ -676,7 +1032,7 @@ export default function EarningsPage() {
                         </Select>
 
                         <Select value={transactionSort} onValueChange={setTransactionSort}>
-                          <SelectTrigger className="h-12">
+                          <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500">
                             <SelectValue placeholder="Sort by" />
                           </SelectTrigger>
                           <SelectContent>
@@ -691,69 +1047,158 @@ export default function EarningsPage() {
                       </div>
                     )}
 
-                    {/* Transactions List */}
-                    <div className="space-y-3">
-                      {filteredTransactions.length === 0 ? (
-                        <div className="text-center py-16 text-gray-500">
-                          <Activity className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                          <p className="text-lg">No transactions found matching your filters.</p>
-                          {hasActiveFilters() && (
-                            <Button 
-                              variant="outline" 
-                              onClick={clearTransactionFilters}
-                              className="mt-4"
-                            >
-                              Clear all filters
-                            </Button>
-                          )}
+                    {/* Mobile-Responsive Transactions Table with Scroll */}
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                      {/* Desktop Table */}
+                      <div className="hidden md:block">
+                        <div className="max-h-96 overflow-y-auto">
+                          <Table>
+                            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                              <TableRow>
+                                <TableHead className="text-slate-700 font-semibold bg-slate-50">Customer</TableHead>
+                                <TableHead className="text-slate-700 font-semibold bg-slate-50">Item</TableHead>
+                                <TableHead className="text-slate-700 font-semibold bg-slate-50">Category</TableHead>
+                                <TableHead className="text-slate-700 font-semibold bg-slate-50">Type</TableHead>
+                                <TableHead className="text-slate-700 font-semibold bg-slate-50">Date</TableHead>
+                                <TableHead className="text-slate-700 font-semibold text-right bg-slate-50">Amount</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredTransactions.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={6} className="text-center py-16">
+                                    <div className="text-slate-500">
+                                      <Activity className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+                                      <p className="text-lg">No transactions found matching your filters.</p>
+                                      {hasActiveFilters() && (
+                                        <Button 
+                                          variant="outline" 
+                                          onClick={clearTransactionFilters}
+                                          className="mt-4 bg-white border-slate-200"
+                                        >
+                                          Clear all filters
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                filteredTransactions.map((transaction, index) => (
+                                  <TableRow key={transaction._id} className="hover:bg-slate-50 transition-colors">
+                                    <TableCell>
+                                      <div>
+                                        <p className="font-semibold text-slate-900">{transaction.customerName}</p>
+                                        <p className="text-slate-500 text-sm">{transaction.customerPhone}</p>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <p className="font-medium text-slate-900">{transaction.itemName}</p>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200">
+                                        {transaction.drinkType}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {transaction.isReward ? (
+                                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                                          <Gift className="h-3 w-3 mr-1" />
+                                          Reward
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                          Paid
+                                        </Badge>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <p className="text-slate-600">{transaction.date}</p>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <p className={`font-bold text-lg ${
+                                        transaction.isReward ? 'text-green-600' : 'text-emerald-600'
+                                      }`}>
+                                        {transaction.isReward ? 'FREE' : formatCurrency(transaction.price)}
+                                      </p>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
                         </div>
-                      ) : (
-                        filteredTransactions.map((transaction, index) => (
-                          <div 
-                            key={transaction._id} 
-                            className={`flex flex-col lg:flex-row items-start lg:items-center justify-between p-5 border rounded-xl transition-all duration-200 hover:shadow-lg gap-4 ${
-                              transaction.isReward ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                transaction.isReward ? 'bg-green-100' : 'bg-blue-100'
-                              }`}>
-                                <span className={`font-bold text-lg ${
-                                  transaction.isReward ? 'text-green-600' : 'text-blue-600'
-                                }`}>
-                                  {index + 1}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <p className="font-semibold text-gray-900 text-lg truncate">{transaction.customerName}</p>
-                                  {transaction.isReward && (
-                                    <Badge variant="secondary" className="text-sm bg-green-100 text-green-700 shrink-0">
-                                      Reward
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-gray-500 mb-2">{transaction.customerPhone}</p>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-lg font-medium text-gray-700">{transaction.itemName}</p>
-                                  <Badge variant="outline" className="text-sm">
-                                    {transaction.drinkType}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className={`text-2xl font-bold ${
-                                transaction.isReward ? 'text-green-600' : 'text-blue-600'
-                              }`}>
-                                {transaction.isReward ? 'FREE' : formatCurrency(transaction.price)}
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">{transaction.date}</p>
+                      </div>
+
+                      {/* Mobile Cards */}
+                      <div className="md:hidden">
+                        {filteredTransactions.length === 0 ? (
+                          <div className="text-center py-16">
+                            <div className="text-slate-500">
+                              <Activity className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+                              <p className="text-lg">No transactions found matching your filters.</p>
+                              {hasActiveFilters() && (
+                                <Button 
+                                  variant="outline" 
+                                  onClick={clearTransactionFilters}
+                                  className="mt-4 bg-white border-slate-200"
+                                >
+                                  Clear all filters
+                                </Button>
+                              )}
                             </div>
                           </div>
-                        ))
-                      )}
+                        ) : (
+                          <div className="max-h-96 overflow-y-auto p-4">
+                            <div className="space-y-3">
+                              {filteredTransactions.map((transaction, index) => (
+                                <div key={transaction._id} className="bg-slate-50 rounded-xl p-4 space-y-3">
+                                  {/* Customer Info */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold text-slate-900 text-sm truncate">{transaction.customerName}</p>
+                                      <p className="text-slate-500 text-xs">{transaction.customerPhone}</p>
+                                    </div>
+                                    <div className="ml-2">
+                                      {transaction.isReward ? (
+                                        <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                                          <Gift className="h-2 w-2 mr-1" />
+                                          FREE
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                                          Paid
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Item Info */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-slate-900 text-sm truncate">{transaction.itemName}</p>
+                                      <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-xs mt-1">
+                                        {transaction.drinkType}
+                                      </Badge>
+                                    </div>
+                                    <div className="ml-2 text-right">
+                                      <p className={`font-bold text-base ${
+                                        transaction.isReward ? 'text-green-600' : 'text-emerald-600'
+                                      }`}>
+                                        {transaction.isReward ? 'FREE' : formatCurrency(transaction.price)}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Date */}
+                                  <div className="text-xs text-slate-500 border-t border-slate-200 pt-2">
+                                    {transaction.date}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

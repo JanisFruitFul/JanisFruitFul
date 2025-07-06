@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
 import {
   ArrowLeft,
@@ -208,12 +209,41 @@ export default function CustomerItemsPage() {
 
         {/* Menu Items Grid */}
         {loading ? (
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardContent className="p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-              <p className="text-gray-600 mt-4">Loading menu items...</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* Results Summary Skeleton */}
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+
+            {/* Items Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <Card key={index} className="border-0 shadow-md">
+                  <CardContent className="p-6">
+                    <div className="text-center">
+                      {/* Image Skeleton */}
+                      <Skeleton className="w-52 h-52 mx-auto mb-4 rounded-2xl" />
+                      
+                      {/* Title Skeleton */}
+                      <Skeleton className="h-6 w-32 mx-auto mb-2" />
+                      
+                      {/* Badge and Price Skeleton */}
+                      <div className="flex items-center justify-between mb-4">
+                        <Skeleton className="h-6 w-20" />
+                        <Skeleton className="h-6 w-16" />
+                      </div>
+                      
+                      {/* Status Skeleton */}
+                      <div className="flex items-center justify-center">
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             {/* Results Summary */}

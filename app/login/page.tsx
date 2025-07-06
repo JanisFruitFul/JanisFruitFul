@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { getApiUrl } from "@/lib/config"
+import { useAuth } from "@/contexts/AuthContext"
 import { Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const { login, isAuthenticated } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,16 +56,21 @@ export default function LoginPage() {
       console.log('📄 Response data:', data);
 
       if (response.ok && data.success) {
-        // Store the token in localStorage for future requests
+        // Use the auth context to handle login
         if (data.token) {
-          localStorage.setItem('auth-token', data.token);
+          login(data.token)
+          toast({
+            title: "Login successful",
+            description: "Welcome to the admin dashboard!",
+          })
+          router.push("/dashboard")
+        } else {
+          toast({
+            title: "Login failed",
+            description: "No authentication token received",
+            variant: "destructive",
+          })
         }
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome to the admin dashboard!",
-        })
-        router.push("/dashboard")
       } else {
         toast({
           title: "Login failed",
