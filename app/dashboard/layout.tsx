@@ -45,7 +45,7 @@ export default function DashboardLayout({
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -64,7 +64,7 @@ export default function DashboardLayout({
               )
             })}
           </nav>
-          <div className="p-4">
+          <div className="p-4 pb-24 lg:pb-4">
             <Button variant="outline" className="w-full" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Logout
