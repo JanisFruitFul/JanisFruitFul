@@ -16,10 +16,15 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value || 
                 request.headers.get('authorization')?.replace('Bearer ', '')
 
-  // If no token is found, redirect to login
+  // If no token is found, redirect to login or customer
   if (!token) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
+    if (pathname === '/') {
+      const customerUrl = new URL('/customer', request.url)
+      return NextResponse.redirect(customerUrl)
+    } else {
+      const loginUrl = new URL('/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
   // If token exists, allow the request to proceed

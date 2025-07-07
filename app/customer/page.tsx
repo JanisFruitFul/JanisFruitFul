@@ -241,9 +241,9 @@ export default function CustomerPage() {
         {/* Floating Emojis */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 text-4xl animate-bounce" style={{ animationDelay: '0s' }}>🥭</div>
-          <div className="absolute top-32 right-20 text-3xl animate-bounce" style={{ animationDelay: '1s' }}>🍊</div>
-          <div className="absolute bottom-32 left-20 text-4xl animate-bounce" style={{ animationDelay: '2s' }}>🍍</div>
-          <div className="absolute bottom-20 right-10 text-3xl animate-bounce" style={{ animationDelay: '0.5s' }}>🥝</div>
+          <div className="absolute top-20 right-10 text-3xl animate-bounce" style={{ animationDelay: '1s' }}>🍊</div>
+          <div className="hidden md:block absolute bottom-32 left-20 text-4xl animate-bounce" style={{ animationDelay: '2s' }}>🍍</div>
+          <div className="hidden md:block absolute bottom-20 right-10 text-3xl animate-bounce" style={{ animationDelay: '0.5s' }}>🥝</div>
         </div>
 
         <div className="relative max-w-6xl mx-auto px-4">
@@ -275,14 +275,9 @@ export default function CustomerPage() {
             <div className={`flex flex-col sm:flex-row gap-4 justify-center mb-12 transition-all duration-700 delay-300 ${
               heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
             }`}>
-              <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-xl px-8 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <Link href="/customer/items">
-                  Shop Now <ArrowRight className="ml-2 w-6 h-6" />
-                </Link>
-              </Button>
               <Button asChild variant="outline" size="lg" className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white text-xl px-8 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <Link href="#how-it-works">
-                  Learn More <Info className="ml-2 w-6 h-6" />
+                <Link href="/customer/rewards">
+                  Check Your Rewards
                 </Link>
               </Button>
             </div>
@@ -339,14 +334,14 @@ export default function CustomerPage() {
             }`}>Our most loved and popular drinks that customers can't get enough of</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 gap-4 md:gap-8">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i} className={`animate-pulse bg-white/80 backdrop-blur-sm border-green-200 transition-all duration-700 ${
                   topSellersVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                 }`}>
-                  <div className="h-72 bg-green-200" />
-                  <CardContent className="p-6">
+                  <div className="h-40 md:h-72 bg-green-200" />
+                  <CardContent className="p-2 md:p-6">
                     <div className="h-4 bg-green-200 rounded mb-2" />
                     <div className="h-6 bg-green-200 rounded mb-4" />
                     <div className="h-4 bg-green-200 rounded w-1/2" />
@@ -355,20 +350,18 @@ export default function CustomerPage() {
               ))
             ) : (
               topSellers.map((juice, index) => (
-                <Card key={juice.id} className={`overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 bg-white/90 backdrop-blur-sm border-green-200 group transition-all duration-700 ${
+                <Card key={juice.id} className={`flex flex-col items-center bg-white/80 rounded-2xl shadow-md border border-green-100 p-4 hover:shadow-lg transition transition-all duration-700 ${
                   topSellersVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                 }`}>
-                  <div className="relative h-72 w-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center overflow-hidden">
+                  <div className="w-[120px] h-[120px] flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl mb-3 overflow-hidden">
                     {juice.image ? (
-                      <img
+                      <Image
                         src={juice.image}
                         alt={juice.name}
-                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
+                        width={120}
+                        height={120}
+                        className="object-contain w-full h-full"
+                        priority
                       />
                     ) : null}
                     <Coffee className={`w-16 h-16 text-green-400 ${juice.image ? 'hidden' : ''}`} />
@@ -376,13 +369,11 @@ export default function CustomerPage() {
                       Popular
                     </div>
                   </div>
-                  <CardContent className="p-6">
+                  <CardContent className="p-2 md:p-6">
                     <div className="mb-4">
-                      <CardTitle className="text-xl font-bold text-green-900 mb-2">{juice.name}</CardTitle>
-                      <div className="text-2xl font-bold text-emerald-600 mb-3">{juice.price}</div>
-                      <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
-                        {juice.category}
-                      </Badge>
+                      <CardTitle className="text-lg font-semibold text-gray-900 text-center">{juice.name}</CardTitle>
+                      <div className="mt-1 text-green-700 font-bold text-base">{juice.price}</div>
+                      <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200 mt-2">{juice.category}</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -444,14 +435,6 @@ export default function CustomerPage() {
               <h3 className="text-xl font-bold text-green-900 mb-3">Get 1 Free!</h3>
               <p className="text-green-700 text-base">The 6th drink is automatically added to your cart for FREE!</p>
             </Card>
-          </div>
-          
-          <div className="text-center mt-12">
-            <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <Link href="/customer/items">
-                Shop by Category <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
           </div>
         </div>
       </section>
@@ -516,7 +499,7 @@ export default function CustomerPage() {
       </section>
 
       {/* Shop by Category Section */}
-      <section 
+      {/* <section 
         ref={categoriesRef}
         className={`py-20 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-1000 ${
           categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
@@ -553,7 +536,7 @@ export default function CustomerPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Why Choose Us Section */}
       <section 
