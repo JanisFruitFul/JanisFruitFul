@@ -23,10 +23,6 @@ async function testConnection() {
     // Test the MenuItem model
     const MenuItem = require('./backend/models/MenuItem');
     
-    // Count all items
-    const totalItems = await MenuItem.countDocuments();
-    console.log(`📊 Total menu items in database: ${totalItems}`);
-    
     // Get active items
     const activeItems = await MenuItem.find({ isActive: true }).limit(5);
     console.log(`📋 Active items found: ${activeItems.length}`);

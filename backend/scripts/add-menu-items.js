@@ -81,8 +81,7 @@ async function addMenuItems() {
     console.log('✅ Connected to MongoDB');
 
     // Check if items already exist
-    const existingCount = await MenuItem.countDocuments();
-    console.log(`📊 Found ${existingCount} existing menu items`);
+    // Removed: const existingCount = await MenuItem.countDocuments();
 
     if (existingCount > 0) {
       console.log('⚠️  Menu items already exist. Skipping...');

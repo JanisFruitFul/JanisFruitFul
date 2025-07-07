@@ -15,8 +15,7 @@ export async function GET() {
     }
 
     // Import connectDB dynamically to avoid build issues
-    const mongodbModule = await import("@/backend/lib/mongodb.js");
-    const connectDB = (mongodbModule as any).connectDB;
+    const { default: connectDB } = await import("@/backend/lib/mongodb");
     
     // Connect to database
     console.log("Connecting to database...");

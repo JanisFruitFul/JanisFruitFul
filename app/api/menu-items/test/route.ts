@@ -33,16 +33,11 @@ export async function GET() {
     await MenuItem.findByIdAndDelete(testItem._id);
     console.log("Test item deleted");
     
-    // Get total count
-    const totalItems = await MenuItem.countDocuments();
-    console.log("Total items in database:", totalItems);
-    
     return NextResponse.json({
       success: true,
       message: "Database connection and schema working correctly",
       testItemCreated: !!testItem,
       testItemFound: !!foundItem,
-      totalItems
     });
     
   } catch (error) {
