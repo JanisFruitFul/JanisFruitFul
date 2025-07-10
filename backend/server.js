@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { connectDB } = require('./lib/mongodb');
+const connectDB = require('./dist/lib/mongodb').default;
 
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 5001;
