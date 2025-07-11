@@ -407,18 +407,6 @@ We can't wait to see you again 😊`;
                     )}
                   </div>
                 </div>
-
-                {/* Search Results Info */}
-                {activeSearch && (
-                  <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-green-600" />
-                      <p className="text-sm font-medium text-green-700">
-                        Customer with number "{activeSearch}" not found.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Welcome State - Show when no search is performed */}

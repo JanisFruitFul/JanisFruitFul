@@ -525,7 +525,7 @@ export default function EarningsPage() {
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  <h1 className="text-xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
                     Earnings Dashboard
                   </h1>
                   <p className="text-slate-600 text-lg mt-1">Comprehensive revenue analytics and insights</p>
@@ -566,7 +566,7 @@ export default function EarningsPage() {
         </div>
 
         {/* Modern Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
           <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-teal-700/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <CardContent className="p-6 relative z-10">

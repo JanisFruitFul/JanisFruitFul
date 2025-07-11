@@ -81,6 +81,9 @@ export default function ManageItemsPage() {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [useCustomCategory, setUseCustomCategory] = useState(false);
   const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
+  // 1. Add state for viewing item details
+  const [viewItem, setViewItem] = useState<MenuItem | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
 
   // Combine default and dynamic categories, removing duplicates
   const categories = [...new Set([...defaultCategories, ...dynamicCategories])];
@@ -384,6 +387,14 @@ export default function ManageItemsPage() {
     setSortBy("name");
   };
 
+  // Add a helper function at the top-level of the component
+  function truncateWords(text: string, wordLimit: number) {
+    if (!text) return '';
+    const words = text.split(/\s+/);
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(' ') + '...';
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-10">
@@ -558,7 +569,16 @@ export default function ManageItemsPage() {
 
               <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {categoryItems.map((item) => (
-                  <Card key={item._id} className={`flex-shrink-0 w-48 sm:w-56 md:w-64 ${!item.isActive ? 'opacity-60' : ''}`}>
+                  <Card
+                    key={item._id}
+                    className={`flex-shrink-0 w-48 sm:w-56 md:w-64 ${!item.isActive ? 'opacity-60' : ''} cursor-pointer`}
+                    onClick={(e) => {
+                      // Prevent opening view dialog if edit/delete button is clicked
+                      if ((e.target as HTMLElement).closest('button')) return;
+                      setViewItem(item);
+                      setShowViewDialog(true);
+                    }}
+                  >
                     <div className="aspect-square bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center relative">
                       <Image
                         src={item.image || "/placeholder.svg"}
@@ -583,7 +603,9 @@ export default function ManageItemsPage() {
                         ₹{item.price}
                       </CardDescription>
                       {item.description && (
-                        <p className="text-xs text-gray-600 line-clamp-1 sm:line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-gray-600 whitespace-pre-line">
+                          {truncateWords(item.description, 15)}
+                        </p>
                       )}
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -733,12 +755,13 @@ export default function ManageItemsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-description">Description</Label>
-              <Input
+              <textarea
                 id="add-description"
                 value={addFormData.description}
                 onChange={(e) => setAddFormData({ ...addFormData, description: e.target.value })}
                 placeholder="Enter item description (optional)"
                 disabled={isAddingItem}
+                className="w-full rounded border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[80px] resize-y"
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -822,11 +845,12 @@ export default function ManageItemsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
-              <Input
+              <textarea
                 id="edit-description"
                 value={editFormData.description}
                 onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                 placeholder="Enter item description"
+                className="w-full rounded border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[80px] resize-y"
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -856,6 +880,51 @@ export default function ManageItemsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Item Details Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={(open) => {
+        setShowViewDialog(open);
+        if (!open) setViewItem(null);
+      }}>
+        <DialogContent className="max-w-lg">
+          {viewItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{viewItem.name}</DialogTitle>
+                <DialogDescription>
+                  <span className="capitalize font-medium text-emerald-700">{viewItem.category}</span>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="w-40 h-40 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                  <Image
+                    src={viewItem.image || "/placeholder.svg"}
+                    alt={viewItem.name}
+                    className="w-full h-full object-cover"
+                    width={160}
+                    height={160}
+                  />
+                </div>
+                <div className="w-full text-center">
+                  <p className="text-lg font-semibold text-emerald-600 mb-1">₹{viewItem.price}</p>
+                  <p className="mb-2 text-gray-700">
+                    {viewItem.isActive ? (
+                      <span className="text-green-600 font-medium">Available</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Unavailable</span>
+                    )}
+                  </p>
+                  {viewItem.description && (
+                    <div className="bg-gray-50 rounded p-3 border text-gray-800 text-sm whitespace-pre-line">
+                      {viewItem.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

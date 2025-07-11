@@ -18,6 +18,47 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+// Animation hook for scroll-triggered animations
+const useScrollAnimation = (threshold: number = 0.1) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [ref, setRef] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!ref) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      {
+        threshold: threshold,
+        rootMargin: '0px 0px -50px 0px'
+      }
+    );
+    observer.observe(ref);
+    return () => {
+      if (ref) {
+        observer.unobserve(ref);
+      }
+    };
+  }, [ref, threshold]);
+  return [setRef, isVisible] as const;
+};
 
 interface MenuItem {
   _id: string;
@@ -26,6 +67,7 @@ interface MenuItem {
   price: number;
   image: string;
   isActive: boolean;
+  description?: string;
 }
 
 export default function CustomerItemsPage() {
@@ -34,6 +76,10 @@ export default function CustomerItemsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [apiStatus, setApiStatus] = useState<string>("Loading...");
+  const [heroRef, heroVisible] = useScrollAnimation();
+  const [menuRef, menuVisible] = useScrollAnimation();
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     console.log('🚀 Customer items page mounted');
@@ -130,39 +176,71 @@ export default function CustomerItemsPage() {
   const categories = ["all", ...Array.from(new Set(menuItems.map(item => item.category)))];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white hover:bg-white/20"
-                asChild
-              >
-                <Link href="/customer">
-                  <ArrowLeft className="h-5 w-5 mr-2" />
-                  Back to Customer Portal
-                </Link>
-              </Button>
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                Our Menu
-              </h1>
-              <p className="text-emerald-100 text-sm sm:text-base">
-                Browse our delicious selection
-              </p>
-            </div>
-            <div className="w-20"></div> {/* Spacer for centering */}
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Item Details Modal */}
+      <Dialog open={isModalOpen} onOpenChange={(open) => {
+        setIsModalOpen(open);
+        if (!open) setSelectedItem(null);
+      }}>
+        <DialogContent>
+          {selectedItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {getCategoryIcon(selectedItem.category)}
+                  {selectedItem.name}
+                </DialogTitle>
+                <DialogDescription>
+                  <span className="capitalize font-medium text-emerald-700">{selectedItem.category}</span>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="w-40 h-40 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                  {selectedItem.image ? (
+                    <img
+                      src={selectedItem.image}
+                      alt={selectedItem.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    getCategoryIcon(selectedItem.category)
+                  )}
+                </div>
+                <div className="w-full text-center">
+                  <p className="text-lg font-semibold text-emerald-600 mb-1">
+                    {formatCurrency(selectedItem.price)}
+                  </p>
+                  <p className="mb-2 text-gray-700">
+                    {selectedItem.isActive ? (
+                      <span className="text-green-600 font-medium">Available</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Unavailable</span>
+                    )}
+                  </p>
+                  {selectedItem.description && (
+                    <div className="bg-gray-50 rounded p-3 border text-gray-800 text-sm whitespace-pre-line">
+                      {selectedItem.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Hero Section */}
+      <section
+        ref={heroRef}
+        className={`relative bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 py-20 overflow-hidden transition-all duration-1000 ${
+          heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}
+      >
+        <div className="relative max-w-4xl mx-auto px-4 text-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-emerald-700 drop-shadow-lg">Explore Our Menu</h1>
+          <p className="text-lg sm:text-2xl text-emerald-900/80 font-medium">Delicious drinks, desserts, and more. Find your favorite and order now!</p>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-
+      </section>
+      <div className="max-w-7xl mx-auto px-4 py-4 space-y-6">
         {/* Search and Filter Section */}
         <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
           <CardHeader>
@@ -170,35 +248,58 @@ export default function CustomerItemsPage() {
               <Search className="h-6 w-6 text-emerald-600" />
               Search & Filter
             </CardTitle>
-            <CardDescription>
-              Find your favorite items by searching or filtering by category
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Search items by name or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12"
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-3">Filter by Category:</p>
-              <div className="flex flex-wrap gap-2">
+            {/* Responsive Search & Category Filter */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  type="text"
+                  placeholder="Search items by name or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12"
+                />
+              </div>
+              {/* Category Dropdown for mobile, buttons for desktop */}
+              <div className="sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="w-full capitalize text-sm px-4 py-2 rounded-full font-semibold shadow border-2 bg-white border-gray-200 text-emerald-700 hover:bg-emerald-50 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        {getCategoryIcon(selectedCategory)}
+                        {selectedCategory === "all" ? "All Items" : selectedCategory}
+                      </span>
+                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {categories.map((category) => (
+                      <DropdownMenuItem
+                        key={category}
+                        onSelect={() => setSelectedCategory(category)}
+                        className={`capitalize flex items-center gap-2 ${selectedCategory === category ? 'font-bold text-emerald-600' : ''}`}
+                      >
+                        {getCategoryIcon(category)}
+                        {category === "all" ? "All Items" : category}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              {/* Category Buttons for desktop */}
+              <div className="hidden sm:flex flex-wrap gap-2">
                 {categories.map((category) => (
                   <Button
                     key={category}
                     variant={selectedCategory === category ? "default" : "outline"}
                     onClick={() => setSelectedCategory(category)}
-                    className="capitalize text-sm"
+                    className={`capitalize text-sm px-4 py-2 rounded-full font-semibold shadow transition-all duration-200 border-2 ${selectedCategory === category ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-white border-emerald-400 scale-105' : 'bg-white border-gray-200 text-emerald-700 hover:bg-emerald-50'}`}
                     size="sm"
                   >
+                    <span className="mr-2">{getCategoryIcon(category)}</span>
                     {category === "all" ? "All Items" : category}
                   </Button>
                 ))}
@@ -206,8 +307,11 @@ export default function CustomerItemsPage() {
             </div>
           </CardContent>
         </Card>
-
         {/* Menu Items Grid */}
+        <section
+          ref={menuRef}
+          className={`transition-all duration-1000 ${menuVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+        >
         {loading ? (
           <div className="space-y-6">
             {/* Results Summary Skeleton */}
@@ -215,32 +319,34 @@ export default function CustomerItemsPage() {
               <Skeleton className="h-4 w-48" />
               <Skeleton className="h-8 w-24" />
             </div>
-
             {/* Items Grid Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, index) => (
-                <Card key={index} className="border-0 shadow-md">
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      {/* Image Skeleton */}
-                      <Skeleton className="w-52 h-52 mx-auto mb-4 rounded-2xl" />
-                      
-                      {/* Title Skeleton */}
-                      <Skeleton className="h-6 w-32 mx-auto mb-2" />
-                      
-                      {/* Badge and Price Skeleton */}
-                      <div className="flex items-center justify-between mb-4">
-                        <Skeleton className="h-6 w-20" />
-                        <Skeleton className="h-6 w-16" />
-                      </div>
-                      
-                      {/* Status Skeleton */}
-                      <div className="flex items-center justify-center">
-                        <Skeleton className="h-4 w-20" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-8">
+              {(selectedCategory === "all" ? categories.filter(c => c !== "all") : [selectedCategory]).map((category, idx) => (
+                <div key={category} className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    {getCategoryIcon(category)}
+                    <span className="font-semibold text-lg capitalize">{category}</span>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {[...Array(3)].map((_, index) => (
+                      <Card key={index} className="border-0 shadow-md min-w-[220px] w-56 flex-shrink-0">
+                        <CardContent className="p-6">
+                          <div className="text-center">
+                            <Skeleton className="w-40 h-40 mx-auto mb-4 rounded-2xl" />
+                            <Skeleton className="h-6 w-24 mx-auto mb-2" />
+                            <div className="flex items-center justify-between mb-4">
+                              <Skeleton className="h-6 w-16" />
+                              <Skeleton className="h-6 w-10" />
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <Skeleton className="h-4 w-16" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -248,9 +354,6 @@ export default function CustomerItemsPage() {
           <>
             {/* Results Summary */}
             <div className="flex items-center justify-between">
-              <p className="text-gray-600">
-                Showing {filteredMenuItems.length} of {menuItems.length} items
-              </p>
               {searchQuery && (
                 <Button 
                   variant="outline" 
@@ -261,66 +364,82 @@ export default function CustomerItemsPage() {
                 </Button>
               )}
             </div>
-
-            {/* Items Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredMenuItems.map((item) => (
-                <Card key={item._id} className="group hover:shadow-lg transition-all duration-300 hover:scale-105 border-0 shadow-md">
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="w-52 h-52 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                        {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback to icon if image fails to load
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            {/* Items by Category, horizontal scroll */}
+            <div className="space-y-8">
+              {(selectedCategory === "all" ? categories.filter(c => c !== "all") : [selectedCategory])
+                .map((category) => {
+                  const items = filteredMenuItems.filter(item => item.category === category);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={category} className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        {getCategoryIcon(category)}
+                        <span className="font-semibold text-lg capitalize">{category}</span>
+                      </div>
+                      <div className="flex gap-4 overflow-x-auto pb-2">
+                        {items.map((item) => (
+                          <Card
+                            key={item._id}
+                            className="group hover:shadow-lg transition-all duration-300 hover:scale-105 border-0 shadow-md min-w-[220px] w-56 flex-shrink-0 cursor-pointer"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setIsModalOpen(true);
                             }}
-                          />
-                        ) : null}
-                        <div className={`w-full h-full flex items-center justify-center ${item.image ? 'hidden' : ''}`}>
-                          {getCategoryIcon(item.category)}
-                        </div>
-                      </div>
-                      
-                      <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">
-                        {item.name}
-                      </h3>
-                      
-                      <div className="flex items-center justify-between mb-4">
-                        <Badge 
-                          variant="outline" 
-                          className={`${getCategoryColor(item.category)} border`}
-                        >
-                          {item.category}
-                        </Badge>
-                        <span className="font-bold text-lg text-emerald-600">
-                          {formatCurrency(item.price)}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-center">
-                        {item.isActive ? (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="text-sm font-medium">Available</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-red-600">
-                            <Clock className="h-4 w-4" />
-                            <span className="text-sm font-medium">Unavailable</span>
-                          </div>
-                        )}
+                          >
+                            <CardContent className="p-6">
+                              <div className="text-center">
+                                <div className="w-40 h-40 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+                                  {item.image ? (
+                                    <img
+                                      src={item.image}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className={`w-full h-full flex items-center justify-center ${item.image ? 'hidden' : ''}`}>
+                                    {getCategoryIcon(item.category)}
+                                  </div>
+                                </div>
+                                <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">
+                                  {item.name}
+                                </h3>
+                                <div className="flex items-center justify-between mb-4">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`${getCategoryColor(item.category)} border`}
+                                  >
+                                    {item.category}
+                                  </Badge>
+                                  <span className="font-bold text-lg text-emerald-600">
+                                    {formatCurrency(item.price)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                  {item.isActive ? (
+                                    <div className="flex items-center gap-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span className="text-sm font-medium">Available</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-red-600">
+                                      <Clock className="h-4 w-4" />
+                                      <span className="text-sm font-medium">Unavailable</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  );
+                })}
             </div>
-
             {/* No Results */}
             {!loading && filteredMenuItems.length === 0 && (
               <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
@@ -350,14 +469,12 @@ export default function CustomerItemsPage() {
             )}
           </>
         )}
-
+        </section>
         {/* CTA Section */}
         <Card className="border-0 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
           <CardContent className="p-8 text-center">
-            <h3 className="text-2xl font-bold mb-4">
-              Ready to Order?
-            </h3>
-            <p className="text-emerald-100 text-lg mb-6 max-w-2xl mx-auto">
+            <h3 className="text-3xl font-extrabold mb-4 drop-shadow">Ready to Order?</h3>
+            <p className="text-emerald-100 text-lg mb-6 max-w-2xl mx-auto font-medium">
               Visit our shop to place your order and start earning rewards! 
               Every 5 drinks you buy, get your 6th drink absolutely FREE.
             </p>
@@ -365,7 +482,7 @@ export default function CustomerItemsPage() {
               <Button 
                 size="lg" 
                 variant="secondary"
-                className="bg-white text-emerald-600 hover:bg-gray-100 font-semibold"
+                className="bg-white text-emerald-600 hover:bg-gray-100 font-semibold shadow-lg"
                 asChild
               >
                 <Link href="/">
@@ -375,7 +492,7 @@ export default function CustomerItemsPage() {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="border-white text-black font-semibold"
+                className="border-white text-black font-semibold shadow-lg"
                 asChild
               >
                 <Link href="/customer">

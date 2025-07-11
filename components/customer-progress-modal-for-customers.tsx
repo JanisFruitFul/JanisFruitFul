@@ -18,6 +18,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useState } from "react";
 
 interface CategoryReward {
   category: string;
@@ -56,6 +57,8 @@ export function CustomerProgressModalForCustomers({
   onSendWhatsApp,
 }: CustomerProgressModalProps) {
   if (!customer) return null;
+
+  const [showClaimInfo, setShowClaimInfo] = useState(false);
 
   const getCardStyle = (status: string) => {
     switch (status) {
@@ -151,7 +154,7 @@ export function CustomerProgressModalForCustomers({
             </h3>
             
             {customer.rewards && customer.rewards.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-2">
                 {customer.rewards.map((category, index) => (
                   <div
                     key={index}
@@ -227,7 +230,7 @@ export function CustomerProgressModalForCustomers({
                     <div className="flex gap-2">
                       {category.status === "ready" && (
                         <Button
-                          onClick={() => onClaimReward(customer, category)}
+                          onClick={() => setShowClaimInfo(true)}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                           size="sm"
                         >
@@ -251,6 +254,15 @@ export function CustomerProgressModalForCustomers({
           </div>
         </div>
       </DialogContent>
+      {/* Claim Info Modal */}
+      <Dialog open={showClaimInfo} onOpenChange={setShowClaimInfo}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle>Visit our shop to claim the reward.</DialogTitle>
+          </DialogHeader>
+          <Button onClick={() => setShowClaimInfo(false)} className="mt-4 w-full">Close</Button>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 } 

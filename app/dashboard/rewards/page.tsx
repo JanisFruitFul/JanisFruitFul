@@ -59,6 +59,8 @@ export default function RewardsPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<RewardCustomer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     fetchRewards();
@@ -216,6 +218,24 @@ We can't wait to see you again 😊`;
     }
   };
 
+  const filteredCustomers = rewardCustomers.filter((customer) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      customer.name.toLowerCase().includes(query) ||
+      customer.phone.toLowerCase().includes(query);
+
+    let matchesStatus = true;
+    if (statusFilter === "no-rewards") {
+      matchesStatus = !customer.rewards || customer.rewards.length === 0;
+    } else if (statusFilter !== "all") {
+      matchesStatus =
+        customer.rewards &&
+        customer.rewards.some((reward) => reward.status === statusFilter);
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-6">
       {/* Error Display */}
@@ -325,88 +345,77 @@ We can't wait to see you again 😊`;
           </div>
           )}
 
+          {/* Search Bar and Filter */}
+          <div className="flex flex-row justify-end gap-2 mb-4 w-full">
+            <input
+              type="text"
+              placeholder="Search by name or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-200 w-[75%] sm:w-auto sm:flex-1"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-200 w-[25%] sm:w-auto sm:flex-1"
+            >
+              <option value="all">All Statuses</option>
+              <option value="ready">Ready</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="earned">Earned</option>
+              <option value="no-rewards">No Rewards</option>
+            </select>
+          </div>
+
           {/* All Customers with Category Rewards */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800">
               All Customers by Category Rewards
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {rewardCustomers.map((customer) => (
+            <div
+              className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 overflow-y-auto"
+              style={{ maxHeight: '60vh', minHeight: '200px' }}
+            >
+              {filteredCustomers.map((customer) => (
                 <Card
                   key={customer._id}
-                  className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 cursor-pointer hover:scale-105"
+                  className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 cursor-pointer hover:scale-105 p-2 sm:p-4 rounded-lg"
                   onClick={() => openCustomerModal(customer)}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-2 sm:pb-3 px-2 sm:px-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-gray-600" />
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                         <div>
-                          <CardTitle className="text-base">
+                          <CardTitle className="text-sm sm:text-base">
                             {customer.name}
                           </CardTitle>
-                          <CardDescription className="text-xs">
+                          <CardDescription className="text-[10px] sm:text-xs">
                             {customer.phone}
                           </CardDescription>
                         </div>
                       </div>
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 sm:space-y-3 px-2 sm:px-4 pb-2 sm:pb-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Total Drinks</span>
-                      <Badge variant="secondary" className="font-bold">
+                      <span className="text-xs sm:text-sm font-medium">Drinks</span>
+                      <Badge variant="secondary" className="font-bold text-xs sm:text-sm px-2">
                         {customer.totalPaidDrinks}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Total Rewards</span>
-                      <Badge variant="secondary" className="font-bold">
+                      <span className="text-xs sm:text-sm font-medium">Rewards</span>
+                      <Badge variant="secondary" className="font-bold text-xs sm:text-sm px-2">
                         {customer.totalRewardsEarned}
                       </Badge>
                     </div>
 
                     {/* Quick Category Summary */}
-                    {customer.rewards && customer.rewards.length > 0 ? (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Categories:</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {customer.rewards.map((category, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className={`text-xs ${
-                                category.status === "ready"
-                                  ? "border-blue-300 text-blue-700 bg-blue-50"
-                                  : category.status === "upcoming"
-                                  ? "border-yellow-300 text-yellow-700 bg-yellow-50"
-                                  : "border-gray-300 text-gray-700 bg-gray-50"
-                              }`}
-                            >
-                              {getCategoryIcon(category.category)} {category.category}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {/* Ready Rewards Count */}
-                        {customer.rewards.filter(r => r.status === "ready").length > 0 && (
-                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-xs text-blue-700 font-medium">
-                              🎁 {customer.rewards.filter(r => r.status === "ready").length} reward(s) ready to claim!
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500">No category rewards yet</p>
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t border-gray-200">
-                      <p className="text-xs text-gray-500 text-center">
-                        Click to view detailed progress
+                    <div className="pt-1 sm:pt-2 border-t border-gray-200">
+                      <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+                        Tap to view progress
                       </p>
                     </div>
                   </CardContent>

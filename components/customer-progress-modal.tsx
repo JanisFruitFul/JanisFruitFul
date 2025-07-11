@@ -106,102 +106,83 @@ export function CustomerProgressModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="h-6 w-6 text-gray-600" />
-              <div>
-                <DialogTitle className="text-xl">{customer.name}</DialogTitle>
-                <DialogDescription className="text-sm">
-                  {customer.phone} • {customer.totalOrders} orders
-                </DialogDescription>
-              </div>
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-y-auto rounded-xl">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-white/95 border-b flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Users className="h-6 w-6 text-gray-600" />
+            <div>
+              <DialogTitle className="text-lg sm:text-xl font-bold">{customer.name}</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-gray-500">
+                {customer.phone} • {customer.totalOrders} orders
+              </DialogDescription>
             </div>
           </div>
-        </DialogHeader>
+          <button
+            aria-label="Close"
+            onClick={onClose}
+            className="rounded-full p-2 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
 
-        <div className="space-y-6">
-          {/* Customer Summary */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
+        <div className="space-y-6 px-4 py-4">
+          {/* Stats Summary */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-2">
+            <div className="flex flex-col items-center bg-gray-50 rounded-lg p-2 sm:p-4">
+              <span className="text-base sm:text-2xl font-bold text-gray-900">
                 {customer.totalPaidDrinks}
-              </div>
-              <div className="text-sm text-gray-600">Total Drinks</div>
+              </span>
+              <span className="text-xs sm:text-sm text-gray-600">Drinks</span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="flex flex-col items-center bg-blue-50 rounded-lg p-2 sm:p-4">
+              <span className="text-base sm:text-2xl font-bold text-blue-600">
                 {customer.totalRewardsEarned}
-              </div>
-              <div className="text-sm text-gray-600">Rewards Earned</div>
+              </span>
+              <span className="text-xs sm:text-sm text-blue-700">Rewards</span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="flex flex-col items-center bg-green-50 rounded-lg p-2 sm:p-4">
+              <span className="text-base sm:text-2xl font-bold text-green-600">
                 {customer.rewards?.filter(r => r.status === "ready").length || 0}
-              </div>
-              <div className="text-sm text-gray-600">Ready to Claim</div>
+              </span>
+              <span className="text-xs sm:text-sm text-green-700">Ready</span>
             </div>
           </div>
 
           {/* Category Progress */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+          <div className="space-y-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
               Drink Progress by Category
             </h3>
-            
             {customer.rewards && customer.rewards.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3">
                 {customer.rewards.map((category, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-lg border ${getCardStyle(category.status)}`}
+                    className={`p-3 sm:p-4 rounded-xl border shadow-sm flex flex-col gap-2 ${getCardStyle(category.status)}`}
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{getCategoryIcon(category.category)}</span>
+                        <span className="text-xl sm:text-2xl">{getCategoryIcon(category.category)}</span>
                         <div>
-                          <h4 className="font-semibold text-gray-800">
+                          <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
                             {category.category}
                           </h4>
-                          <p className="text-sm text-gray-600 capitalize">
-                            {category.status} status
-                          </p>
+                          <span className="inline-block text-[11px] sm:text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 capitalize">
+                            {category.status}
+                          </span>
                         </div>
                       </div>
                       {getStatusIcon(category.status)}
                     </div>
 
-                    {/* Progress Stats */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      <div className="text-center p-2 bg-white/50 rounded">
-                        <div className="text-sm font-bold text-gray-800">
-                          {category.paid}
-                        </div>
-                        <div className="text-xs text-gray-600">Paid</div>
-                      </div>
-                      <div className="text-center p-2 bg-white/50 rounded">
-                        <div className="text-sm font-bold text-blue-600">
-                          {category.earned}
-                        </div>
-                        <div className="text-xs text-gray-600">Earned</div>
-                      </div>
-                      <div className="text-center p-2 bg-white/50 rounded">
-                        <div className="text-sm font-bold text-green-600">
-                          {category.claimed}
-                        </div>
-                        <div className="text-xs text-gray-600">Claimed</div>
-                      </div>
-                    </div>
-
                     {/* Progress Bar */}
-                    <div className="space-y-2 mb-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Progress to Next Reward</span>
-                        <span className="text-sm text-gray-500">
-                          {category.status === "ready"
-                            ? "5/5"
-                            : `${category.progress}/5`}
+                    <div className="mb-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium">Progress</span>
+                        <span className="text-xs text-gray-500">
+                          {category.status === "ready" ? "5/5" : `${category.progress}/5`}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -223,35 +204,48 @@ export function CustomerProgressModal({
                       </div>
                     </div>
 
+                    {/* Progress Stats */}
+                    <div className="flex justify-between text-center text-xs mb-1">
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-800">{category.paid}</div>
+                        <div className="text-gray-500">Paid</div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-blue-600">{category.earned}</div>
+                        <div className="text-gray-500">Earned</div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-green-600">{category.claimed}</div>
+                        <div className="text-gray-500">Claimed</div>
+                      </div>
+                    </div>
+
                     {/* Status Message */}
-                    <div className="text-center p-2 bg-white/50 rounded mb-3">
-                      <p className="text-sm font-medium">
-                        {category.status === "ready" 
-                          ? `🎁 Ready to claim ${category.pending} free ${category.category}!`
-                          : category.status === "upcoming"
-                          ? `Just ${category.drinksUntilReward} more ${category.category} to go!`
-                          : `${category.drinksUntilReward} ${category.category} drinks needed`
-                        }
-                      </p>
+                    <div className="text-center p-2 bg-white/60 rounded mb-1 text-xs font-medium">
+                      {category.status === "ready"
+                        ? `🎁 Ready to claim ${category.pending} free ${category.category}!`
+                        : category.status === "upcoming"
+                        ? `Just ${category.drinksUntilReward} more ${category.category} to go!`
+                        : `${category.drinksUntilReward} ${category.category}'s needed`}
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-auto">
                       {category.status === "ready" && (
                         <Button
                           onClick={() => onClaimReward(customer, category)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm"
                           size="sm"
                         >
                           <Gift className="h-4 w-4 mr-1" />
-                          Claim Reward
+                          Claim
                         </Button>
                       )}
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => onSendWhatsApp(customer, category)}
-                        className="text-green-600 border-green-600 hover:bg-green-50"
+                        className="flex-1 text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm"
                       >
                         <MessageCircle className="h-4 w-4 mr-1" />
                         Remind
