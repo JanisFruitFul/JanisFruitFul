@@ -34,7 +34,6 @@ const ShopSchema = new mongoose.Schema({
 async function seedDatabase() {
   try {
     await mongoose.connect(MONGODB_URI)
-    console.log("Connected to MongoDB Atlas")
 
     const Admin = mongoose.model("Admin", AdminSchema)
     const MenuItem = mongoose.model("MenuItem", MenuItemSchema)
@@ -54,19 +53,15 @@ async function seedDatabase() {
       role: "super_admin",
     })
     await admin.save()
-    console.log("Admin user created")
     
 
     await MenuItem.insertMany(menuItems)
-    console.log("Menu items created")
 
     // Create shop info
     const shop = new Shop({})
     await shop.save()
-    console.log("Shop info created")
 
-    console.log("Database seeded successfully!")
-    console.log("Login credentials: admin@drinks.com / admin123")
+
   } catch (error) {
     console.error("Error seeding database:", error)
   } finally {

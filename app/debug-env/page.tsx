@@ -10,7 +10,7 @@ export default function DebugEnvPage() {
   const testConnection = async () => {
     try {
       const apiUrl = getApiUrl('health');
-      console.log('Testing connection to:', apiUrl);
+
       
       const response = await fetch(apiUrl);
       const data = await response.json();

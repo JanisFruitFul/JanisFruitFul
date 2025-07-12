@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,11 +11,9 @@ import {
 import {
   Award,
   Gift,
-  MessageCircle,
   Target,
   Coffee,
   Users,
-  X,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -45,20 +42,16 @@ interface CustomerProgressModalProps {
   customer: RewardCustomer | null;
   isOpen: boolean;
   onClose: () => void;
-  onClaimReward: (customer: RewardCustomer, category: CategoryReward) => void;
-  onSendWhatsApp: (customer: RewardCustomer, category: CategoryReward) => void;
 }
 
 export function CustomerProgressModalForCustomers({
   customer,
   isOpen,
   onClose,
-  onClaimReward,
-  onSendWhatsApp,
 }: CustomerProgressModalProps) {
-  if (!customer) return null;
-
   const [showClaimInfo, setShowClaimInfo] = useState(false);
+
+  if (!customer) return null;
 
   const getCardStyle = (status: string) => {
     switch (status) {
@@ -247,7 +240,7 @@ export function CustomerProgressModalForCustomers({
                 <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-500">No category rewards yet</p>
                 <p className="text-sm text-gray-400 mt-1">
-                  This customer hasn't earned any rewards yet
+                  This customer hasn&apos;t earned any rewards yet
                 </p>
               </div>
             )}

@@ -73,39 +73,27 @@ const sampleMenuItems = [
 
 async function addMenuItems() {
   try {
-    console.log('🔄 Adding sample menu items...');
-    
     // Connect to MongoDB
     const { connectDB } = require('../lib/mongodb');
     await connectDB();
-    console.log('✅ Connected to MongoDB');
 
     // Check if items already exist
     // Removed: const existingCount = await MenuItem.countDocuments();
 
     if (existingCount > 0) {
-      console.log('⚠️  Menu items already exist. Skipping...');
       return;
     }
 
     // Add menu items
     const createdItems = await MenuItem.insertMany(sampleMenuItems);
-    console.log(`✅ Successfully added ${createdItems.length} menu items`);
 
-    // Display created items
-    console.log('\n📋 Created Menu Items:');
-    createdItems.forEach((item, index) => {
-      console.log(`${index + 1}. ${item.name} - ₹${item.price} (${item.category})`);
-    });
 
-    console.log('\n🎉 Sample menu items added successfully!');
-    console.log('You can now test the top sellers feature on the customer page.');
 
   } catch (error) {
     console.error('❌ Failed to add menu items:', error);
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
+
     process.exit(0);
   }
 }

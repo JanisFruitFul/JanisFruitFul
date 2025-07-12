@@ -1,13 +1,17 @@
 export const dynamic = "force-dynamic";
 import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/server-auth"
 
-export async function GET(request: Request) {
+interface Order {
+  isReward: boolean
+}
+
+export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const authResult = await requireAuth(request as any)
+    const authResult = await requireAuth(request)
     if ('error' in authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -30,7 +34,7 @@ export async function GET(request: Request) {
     // Get recent customers (last 5) with drinks until reward calculation
     const recentCustomers = customers.slice(0, 5).map((customer) => {
       // Calculate drinks until next reward
-      const paidDrinks = customer.orders ? customer.orders.filter(order => !order.isReward).length : 0
+      const paidDrinks = customer.orders ? customer.orders.filter((order: Order) => !order.isReward).length : 0
       const effectivePaidDrinks = paidDrinks - (customer.rewardsEarned * 5)
       const progressTowardReward = effectivePaidDrinks % 5
       const drinksUntilReward = progressTowardReward === 0 && effectivePaidDrinks > 0 ? 0 : 5 - progressTowardReward

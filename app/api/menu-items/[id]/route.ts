@@ -20,7 +20,7 @@ export async function PUT(
     const description = formData.get("description") as string;
     const imageFile = formData.get("image") as File;
     
-    console.log("Updating menu item:", params.id);
+
 
     // Validate required fields
     if (!name || !category || !price) {
@@ -61,8 +61,6 @@ export async function PUT(
     let imageUrl = existingItem.image;
     if (imageFile) {
       try {
-        console.log("Uploading new image to Cloudinary...");
-        
         const bytes = await imageFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         
@@ -81,7 +79,6 @@ export async function PUT(
         
         if (result && result.secure_url) {
           imageUrl = result.secure_url;
-          console.log("New image uploaded successfully:", imageUrl);
         } else {
           throw new Error("Failed to get secure URL from Cloudinary");
         }
@@ -107,7 +104,7 @@ export async function PUT(
       { new: true }
     );
 
-    console.log("Updated menu item:", updatedItem);
+
     
     return NextResponse.json(updatedItem);
   } catch (error) {
@@ -127,8 +124,6 @@ export async function DELETE(
   try {
     await connectDB();
     
-    console.log("Deleting menu item:", params.id);
-
     const deletedItem = await MenuItem.findByIdAndDelete(params.id);
     
     if (!deletedItem) {
@@ -137,8 +132,6 @@ export async function DELETE(
         { status: 404 }
       );
     }
-
-    console.log("Deleted menu item:", deletedItem);
     
     return NextResponse.json({ message: "Menu item deleted successfully" });
   } catch (error) {
@@ -161,8 +154,6 @@ export async function PATCH(
     const body = await req.json();
     const { isActive } = body;
     
-    console.log("Toggling availability for menu item:", params.id, "to:", isActive);
-
     if (typeof isActive !== 'boolean') {
       return NextResponse.json(
         { error: "isActive must be a boolean" },
@@ -182,8 +173,6 @@ export async function PATCH(
         { status: 404 }
       );
     }
-
-    console.log("Updated menu item availability:", updatedItem);
     
     return NextResponse.json(updatedItem);
   } catch (error) {

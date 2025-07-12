@@ -1,27 +1,22 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Star,
-  ShoppingCart,
-  Eye,
   Truck,
   Leaf,
   Package,
   Zap,
-  ArrowRight,
   Coffee,
-  Users,
   Gift,
   Heart,
-  Info,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { TypedText } from "@/components/TypedText";
 
 // Animation hook for scroll-triggered animations when component comes into view
 const useScrollAnimation = (threshold: number = 0.1) => {
@@ -71,13 +66,6 @@ interface Testimonial {
   avatar: string;
 }
 
-interface Category {
-  name: string;
-  icon: string;
-  tagline: string;
-  color: string;
-}
-
 // Mock data
 const testimonials: Testimonial[] = [
   {
@@ -106,72 +94,17 @@ const testimonials: Testimonial[] = [
   },
 ];
 
-const categories: Category[] = [
-  {
-    name: "Citrus",
-    icon: "🍊",
-    tagline: "Zesty and refreshing!",
-    color: "from-orange-400 to-yellow-400",
-  },
-  {
-    name: "Green",
-    icon: "🥬",
-    tagline: "Healthy and detoxifying!",
-    color: "from-green-400 to-emerald-400",
-  },
-  {
-    name: "Tropical",
-    icon: "🥭",
-    tagline: "Exotic and sweet!",
-    color: "from-pink-400 to-orange-400",
-  },
-  {
-    name: "Detox",
-    icon: "🥒",
-    tagline: "Clean and pure!",
-    color: "from-green-300 to-blue-400",
-  },
-  {
-    name: "Smoothies",
-    icon: "🍓",
-    tagline: "Creamy and filling!",
-    color: "from-purple-400 to-pink-400",
-  },
-  {
-    name: "Berries",
-    icon: "🫐",
-    tagline: "Antioxidant rich!",
-    color: "from-red-400 to-purple-400",
-  },
-];
 
-const carouselImages = ["/Menu_2.PNG", "/Menu_3.PNG", "/Menu_4.PNG"];
 
 export default function CustomerPage() {
   const [topSellers, setTopSellers] = useState<Juice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const carouselTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  // Auto-advance carousel
-  useEffect(() => {
-    if (carouselTimeout.current) clearTimeout(carouselTimeout.current);
-    carouselTimeout.current = setTimeout(() => {
-      setCarouselIndex((prev) => (prev + 1) % carouselImages.length);
-    }, 4000);
-    return () => { if (carouselTimeout.current) clearTimeout(carouselTimeout.current); };
-  }, [carouselIndex]);
-
-  const goToSlide = (idx: number) => setCarouselIndex(idx);
-  const prevSlide = () => setCarouselIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
-  const nextSlide = () => setCarouselIndex((prev) => (prev + 1) % carouselImages.length);
 
   // Scroll-triggered animations for each section
   const [heroRef, heroVisible] = useScrollAnimation();
   const [topSellersRef, topSellersVisible] = useScrollAnimation();
   const [howItWorksRef, howItWorksVisible] = useScrollAnimation();
   const [testimonialsRef, testimonialsVisible] = useScrollAnimation();
-  const [categoriesRef, categoriesVisible] = useScrollAnimation();
   const [whyChooseUsRef, whyChooseUsVisible] = useScrollAnimation();
 
   useEffect(() => {
@@ -262,66 +195,11 @@ export default function CustomerPage() {
           >
             Fresh & Healthy
             <span className="block text-emerald-600">Juice Delights</span>
+            <span className="block text-green-500 text-5xl">at</span>
+            <TypedText text="Jani's Fruitful" className="block text-4xl md:text-6xl mt-2 font-extrabold" speed={80} />
           </h1>
 
-          {/* 🔄 Image Carousel with Fixed Buttons */}
-          <div className="relative w-full max-w-4xl h-[300px] md:h-[500px] mx-auto mt-10 overflow-hidden rounded-2xl shadow-xl" id="default-carousel">
-            {/* Carousel wrapper */}
-            <div className="relative h-full w-full overflow-hidden rounded-2xl">
-              {carouselImages.map((src, idx) => (
-                <div
-                  key={idx}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${carouselIndex === idx ? 'opacity-100 z-20' : 'opacity-0 z-10'} flex items-center justify-center`}
-                  aria-hidden={carouselIndex !== idx}
-                  data-carousel-item={carouselIndex === idx ? 'active' : undefined}
-                >
-                  <Image
-                    src={src}
-                    alt={`Slide ${idx + 1}`}
-                    fill
-                    className="object-cover w-full h-full"
-                    priority={idx === 0}
-                  />
-                </div>
-              ))}
-            </div>
-            {/* Slider indicators */}
-            <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3">
-              {carouselImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`w-3 h-3 rounded-full ${carouselIndex === idx ? 'bg-emerald-600' : 'bg-white/70 border border-emerald-600'}`}
-                  aria-current={carouselIndex === idx}
-                  aria-label={`Slide ${idx + 1}`}
-                  onClick={() => goToSlide(idx)}
-                />
-              ))}
-            </div>
-            {/* Slider controls */}
-            <button
-              type="button"
-              className="absolute top-0 left-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
-              onClick={prevSlide}
-              aria-label="Previous"
-            >
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 group-focus:ring-4 group-focus:ring-white group-focus:outline-none">
-                <svg className="w-4 h-4 text-white" aria-hidden="true" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 1 1 5l4 4"/></svg>
-                <span className="sr-only">Previous</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="absolute top-0 right-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none"
-              onClick={nextSlide}
-              aria-label="Next"
-            >
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 group-hover:bg-white/50 group-focus:ring-4 group-focus:ring-white group-focus:outline-none">
-                <svg className="w-4 h-4 text-white" aria-hidden="true" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/></svg>
-                <span className="sr-only">Next</span>
-              </span>
-            </button>
-          </div>
+
           {/* Action Buttons below carousel */}
           <div className="flex flex-row gap-4 justify-center mt-6 mb-2">
             <Button
@@ -442,7 +320,7 @@ export default function CustomerPage() {
                   : "opacity-0 translate-y-5"
               }`}
             >
-              Our most loved and popular drinks that customers can't get enough
+              Our most loved and popular drinks that customers can&apos;t get enough
               of
             </p>
           </div>
@@ -466,7 +344,7 @@ export default function CustomerPage() {
                     </CardContent>
                   </Card>
                 ))
-              : topSellers.map((juice, index) => (
+              : topSellers.map((juice) => (
                   <Card
                     key={juice.id}
                     className={`flex flex-col items-center bg-white/80 rounded-2xl shadow-md border border-green-100 p-4 hover:shadow-lg transition transition-all duration-700 ${
@@ -551,7 +429,7 @@ export default function CustomerPage() {
                   : "opacity-0 translate-y-5"
               }`}
             >
-              Get your free drink in 3 simple steps - it's that easy!
+              Get your free drink in 3 simple steps - it&apos;s that easy!
             </p>
           </div>
 
@@ -666,9 +544,11 @@ export default function CustomerPage() {
               >
                 <div className="flex items-start gap-6">
                   <div className="relative">
-                    <img
+                    <Image
                       src={testimonial.avatar}
                       alt={testimonial.name}
+                      width={64}
+                      height={64}
                       className="w-16 h-16 rounded-full object-cover border-4 border-green-200"
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -694,7 +574,7 @@ export default function CustomerPage() {
                       </div>
                     </div>
                     <p className="text-green-700 text-base italic leading-relaxed">
-                      "{testimonial.text}"
+                      &ldquo;{testimonial.text}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -703,46 +583,6 @@ export default function CustomerPage() {
           </div>
         </div>
       </section>
-
-      {/* Shop by Category Section */}
-      {/* <section 
-        ref={categoriesRef}
-        className={`py-20 bg-gradient-to-br from-green-50 to-emerald-50 transition-all duration-1000 ${
-          categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className={`inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-4 transition-all duration-700 ${
-              categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-            }`}>
-              <Coffee className="w-4 h-4" />
-              Browse Categories
-            </div>
-            <h2 className={`text-4xl md:text-5xl font-bold text-green-900 mb-4 transition-all duration-700 ${
-              categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-            }`}>Shop by Category</h2>
-            <p className={`text-xl text-green-700 max-w-2xl mx-auto transition-all duration-700 ${
-              categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-            }`}>Find your favorite type of drink from our diverse collection</p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-            {categories.map((category, index) => (
-              <Card key={category.name} className={`cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-white/90 backdrop-blur-sm border-green-200 group transition-all duration-700 ${
-                categoriesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-              }`}>
-                <CardHeader className="text-center pb-6 pt-8">
-                  <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">{category.icon}</div>
-                  <CardTitle className="text-xl font-bold text-green-900">{category.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center pt-0 pb-8">
-                  <p className="text-green-700 text-base font-medium">{category.tagline}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section> */}
 
       {/* Why Choose Us Section */}
       <section
@@ -781,7 +621,7 @@ export default function CustomerPage() {
                   : "opacity-0 translate-y-5"
               }`}
             >
-              Quality and service you can trust - we're committed to excellence
+              Quality and service you can trust - we&apos;re committed to excellence
             </p>
           </div>
 

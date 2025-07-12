@@ -10,7 +10,7 @@ const uploadImage = async () => {
       }
     );
 
-    console.log("Image URL:", result.secure_url); // <- store this in MongoDB
+
   } catch (err) {
     console.error("Upload failed:", err);
   }

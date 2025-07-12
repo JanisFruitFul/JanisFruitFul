@@ -5,24 +5,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getApiUrl } from "@/lib/config";
 import { useState } from "react";
 
+interface TestResults {
+  health?: {
+    success: boolean;
+    data: unknown;
+  };
+  menu?: {
+    success: boolean;
+    count: number;
+    sample?: {
+      name: string;
+      price: number;
+    };
+  };
+  customer?: {
+    success: boolean;
+    count: number;
+    sample?: {
+      name: string;
+      phone: string;
+      ordersCount: number;
+    };
+  };
+  allCustomers?: {
+    success: boolean;
+    count: number;
+  };
+  error?: string;
+}
+
 export default function TestBackendPage() {
-  const [testResults, setTestResults] = useState<any>({});
+  const [testResults, setTestResults] = useState<TestResults>({});
   const [loading, setLoading] = useState(false);
 
   const runAllTests = async () => {
     setLoading(true);
-    const results: any = {};
+    const results: TestResults = {};
 
     try {
       // Test 1: Health check
-      console.log('🧪 Test 1: Health check');
       const healthUrl = getApiUrl('health');
       const healthResponse = await fetch(healthUrl);
       const healthData = await healthResponse.json();
       results.health = { success: healthResponse.ok, data: healthData };
 
       // Test 2: Menu items
-      console.log('🧪 Test 2: Menu items');
       const menuUrl = getApiUrl('api/menu');
       const menuResponse = await fetch(menuUrl);
       const menuData = await menuResponse.json();
@@ -33,7 +60,6 @@ export default function TestBackendPage() {
       };
 
       // Test 3: Customer search
-      console.log('🧪 Test 3: Customer search');
       const customerUrl = getApiUrl('api/customers?phone=8309664356');
       const customerResponse = await fetch(customerUrl);
       const customerData = await customerResponse.json();
@@ -44,11 +70,10 @@ export default function TestBackendPage() {
           name: customerData[0].name,
           phone: customerData[0].phone,
           ordersCount: customerData[0].orders?.length || 0
-        } : null
+        } : undefined
       };
 
       // Test 4: All customers
-      console.log('🧪 Test 4: All customers');
       const allCustomersUrl = getApiUrl('api/customers');
       const allCustomersResponse = await fetch(allCustomersUrl);
       const allCustomersData = await allCustomersResponse.json();
@@ -58,7 +83,6 @@ export default function TestBackendPage() {
       };
 
       setTestResults(results);
-      console.log('✅ All tests completed:', results);
 
     } catch (error) {
       console.error('❌ Test failed:', error);
@@ -74,7 +98,7 @@ export default function TestBackendPage() {
         <CardHeader>
           <CardTitle>Backend API Test Suite</CardTitle>
           <CardDescription>
-            Test all backend APIs to verify they're working and returning real database data
+            Test all backend APIs to verify they&apos;re working and returning real database data
           </CardDescription>
         </CardHeader>
         <CardContent>

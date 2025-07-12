@@ -4,10 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    console.log("=== Starting SIMPLE POST request to /api/menu-items/simple ===");
-    
     const connection = await connectDB();
-    console.log("Database connection status:", connection ? "Connected" : "Not connected");
     
     if (!connection) {
       return NextResponse.json({ 
@@ -23,12 +20,7 @@ export async function POST(req: Request) {
     const price = formData.get("price") as string;
     const description = formData.get("description") as string;
     
-    console.log("Received form data:", { 
-      name, 
-      category, 
-      price, 
-      description
-    });
+
 
     // Validate required fields
     if (!name || !category || !price) {
@@ -55,16 +47,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create menu item with placeholder image
-    console.log("Attempting to create menu item with data:", {
-      name: name.trim(),
-      category: category,
-      price: priceNum,
-      description: description.trim() || undefined,
-      image: "/placeholder.svg?height=200&width=200",
-      isActive: true,
-    });
-
     const menuItem = await MenuItem.create({
       name: name.trim(),
       category: category,
@@ -73,9 +55,6 @@ export async function POST(req: Request) {
       image: "/placeholder.svg?height=200&width=200",
       isActive: true,
     });
-
-    console.log("Successfully created menu item:", menuItem);
-    console.log("Menu item ID:", menuItem._id);
     
     return NextResponse.json({
       success: true,

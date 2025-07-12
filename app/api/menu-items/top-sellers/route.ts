@@ -1,10 +1,18 @@
 import MenuItem from "@/backend/models/MenuItem";
 import { NextResponse } from "next/server";
 
+interface MenuItemData {
+  _id: unknown
+  name?: string
+  price?: number
+  image?: string
+  category?: string
+  description?: string
+  createdAt?: Date
+}
+
 export async function GET() {
   try {
-    console.log("=== Fetching top sellers ===");
-    
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
       console.warn("MONGODB_URI not set, returning empty array")
@@ -18,7 +26,6 @@ export async function GET() {
     const { default: connectDB } = await import("@/backend/lib/mongodb");
     
     // Connect to database
-    console.log("Connecting to database...");
     const connection = await connectDB();
     
     if (!connection) {
@@ -26,11 +33,8 @@ export async function GET() {
       throw new Error('Database connection failed');
     }
     
-    console.log("Database connected successfully");
-    
     // Get all active menu items and sort by creation date (newest first)
     // In a real app, you might want to sort by actual sales data
-    console.log("Fetching menu items from database...");
     
     const menuItems = await MenuItem.find({ isActive: true })
       .select('_id name price image category description createdAt') // Only select needed fields
@@ -39,21 +43,17 @@ export async function GET() {
       .lean() // Use lean() for better performance
       .exec();
     
-    console.log(`Found ${menuItems.length} menu items`);
-    
-    console.log(`Found ${menuItems.length} top selling items`);
-    
     // Transform the data to match the frontend expectations
-    const topSellers = menuItems.map((item: any, index: number) => ({
-      id: item._id.toString(),
-      name: item.name,
-      price: `₹${item.price.toFixed(2)}`,
-      image: item.image,
-      category: item.category,
+    const topSellers = menuItems.map((item: MenuItemData, index: number) => ({
+      id: item._id?.toString() || '',
+      name: item.name || '',
+      price: `₹${(item.price || 0).toFixed(2)}`,
+      image: item.image || '',
+      category: item.category || '',
       rating: 4.5 + (Math.random() * 0.5), // Mock rating between 4.5-5.0
       orders: Math.floor(Math.random() * 200) + 50, // Mock orders between 50-250
       isPopular: index < 3, // First 3 items are marked as popular
-      description: item.description
+      description: item.description || ''
     }));
     
     return NextResponse.json({

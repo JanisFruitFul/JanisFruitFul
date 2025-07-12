@@ -6,16 +6,12 @@ const Customer = require('../models/Customer');
 
 async function migrateRewards() {
   try {
-    console.log('🔄 Starting rewards migration...');
-    
     // Connect to MongoDB
     const { connectDB } = require('../lib/mongodb');
     await connectDB();
-    console.log('✅ Connected to MongoDB');
 
     // Get all customers
     const customers = await Customer.find({});
-    console.log(`📊 Found ${customers.length} customers to migrate`);
 
     let migratedCount = 0;
     let skippedCount = 0;
@@ -62,7 +58,6 @@ async function migrateRewards() {
 
         await customer.save();
         migratedCount++;
-        console.log(`✅ Migrated customer: ${customer.name} (${customer.phone})`);
         
       } catch (error) {
         console.error(`❌ Failed to migrate customer ${customer.name}:`, error.message);
@@ -70,10 +65,6 @@ async function migrateRewards() {
       }
     }
 
-    console.log('\n🎉 Migration completed!');
-    console.log(`✅ Successfully migrated: ${migratedCount} customers`);
-    console.log(`❌ Skipped: ${skippedCount} customers`);
-    
     // Verify migration
     const verifyCustomers = await Customer.find({});
     let totalRewards = 0;
@@ -88,16 +79,11 @@ async function migrateRewards() {
       }
     });
 
-    console.log(`\n📊 Verification:`);
-    console.log(`- Total customers: ${verifyCustomers.length}`);
-    console.log(`- Customers with rewards: ${customersWithRewards}`);
-    console.log(`- Total rewards earned: ${totalRewards}`);
-
   } catch (error) {
     console.error('❌ Migration failed:', error);
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
+
     process.exit(0);
   }
 }

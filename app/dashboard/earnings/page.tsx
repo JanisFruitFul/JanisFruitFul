@@ -13,7 +13,6 @@ import { getApiUrl } from "@/lib/config";
 import {
     Activity,
     BarChart3,
-    Calendar,
     ChevronDown,
     ChevronUp,
     Coffee,
@@ -26,12 +25,10 @@ import {
     X,
     Gift,
     ArrowUpRight,
-    ArrowDownRight,
-    Eye,
     Download
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Line, LineChart, PieChart, Pie, Cell } from "recharts";
+import { useEffect, useState, useCallback } from "react";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Line, LineChart } from "recharts";
 
 interface EarningsData {
   totalEarnings: number;
@@ -101,11 +98,7 @@ export default function EarningsPage() {
   
   // Drinks scroll container - no pagination needed
 
-  useEffect(() => {
-    fetchEarningsData();
-  }, [timeFilter]);
-
-  const fetchEarningsData = async () => {
+  const fetchEarningsData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -125,23 +118,18 @@ export default function EarningsPage() {
       const data = await response.json();
       setEarningsData(data);
       
-      // Debug after setting data
-      setTimeout(() => {
-        console.log('Frontend Earnings Data:', {
-          totalEarnings: data.totalEarnings,
-          totalOrders: data.totalOrders,
-          transactionsCount: data.transactions?.length || 0,
-          sampleTransactions: data.transactions?.slice(0, 3) || [],
-          calendarData: getCalendarData()
-        });
-      }, 100);
+
     } catch (error) {
       console.error("Failed to fetch earnings data:", error);
       setError(error instanceof Error ? error.message : 'Failed to fetch earnings data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeFilter]);
+
+  useEffect(() => {
+    fetchEarningsData();
+  }, [fetchEarningsData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -281,184 +269,6 @@ export default function EarningsPage() {
     document.body.removeChild(link);
   };
 
-  // Function to get calendar data for the current month
-  const getCalendarData = () => {
-    if (!earningsData?.transactions) return [];
-    
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    // Get all days in the current month
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    const calendarData = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      calendarData.push({
-        date: null,
-        dayOfMonth: null,
-        dayName: '',
-        customers: [],
-        totalOrders: 0,
-        totalRewards: 0,
-        totalEarnings: 0,
-        isEmpty: true
-      });
-    }
-    
-    // Add all days in the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const dateString = date.toISOString().split('T')[0];
-      
-      // Filter transactions for this specific date
-      const dayTransactions = earningsData.transactions.filter(t => 
-        t.date === dateString
-      );
-      
-      // Group by customer for this day
-      const customerGroups = dayTransactions.reduce((acc, transaction) => {
-        const customerKey = `${transaction.customerName}-${transaction.customerPhone}`;
-        if (!acc[customerKey]) {
-          acc[customerKey] = {
-            customerName: transaction.customerName,
-            customerPhone: transaction.customerPhone,
-            orders: 0,
-            rewards: 0,
-            totalSpent: 0
-          };
-        }
-        
-        if (transaction.isReward) {
-          acc[customerKey].rewards += 1;
-        } else {
-          acc[customerKey].orders += 1;
-          acc[customerKey].totalSpent += transaction.price;
-        }
-        
-        return acc;
-      }, {} as Record<string, { customerName: string; customerPhone: string; orders: number; rewards: number; totalSpent: number }>);
-      
-      const dayData = {
-        date: dateString,
-        dayOfMonth: day,
-        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        customers: Object.values(customerGroups),
-        totalOrders: dayTransactions.filter(t => !t.isReward).length,
-        totalRewards: dayTransactions.filter(t => t.isReward).length,
-        totalEarnings: dayTransactions.filter(t => !t.isReward).reduce((sum, t) => sum + t.price, 0),
-        isEmpty: false
-      };
-      
-      calendarData.push(dayData);
-    }
-    
-    return calendarData;
-  };
-
-  // Function to render calendar grid
-  const renderCalendarGrid = () => {
-    const calendarData = getCalendarData();
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    return (
-      <div className="space-y-4">
-        {/* Calendar Header */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {weekDays.map((day) => (
-            <div key={day} className="text-center p-3 bg-gray-100 rounded-lg">
-              <p className="font-semibold text-gray-700 text-sm">{day}</p>
-            </div>
-          ))}
-        </div>
-        
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {calendarData.map((dayData, index) => (
-            <div key={index} className={`min-h-[120px] border rounded-lg p-2 ${
-              dayData.isEmpty 
-                ? 'bg-gray-50 border-gray-200' 
-                : 'bg-white border-gray-300 hover:border-blue-400 hover:shadow-md transition-all duration-200'
-            }`}>
-              {dayData.isEmpty ? (
-                <div className="h-full flex items-center justify-center">
-                  <span className="text-gray-400 text-xs">-</span>
-                </div>
-              ) : (
-                <div className="h-full flex flex-col">
-                  {/* Day Header */}
-                  <div className="text-center mb-2">
-                    <p className="font-bold text-lg text-gray-900">{dayData.dayOfMonth}</p>
-                    <p className="text-xs text-gray-500">{dayData.dayName}</p>
-                  </div>
-                  
-                  {/* Daily Summary */}
-                  {(dayData.totalOrders > 0 || dayData.totalRewards > 0) && (
-                    <div className="flex justify-between items-center mb-2 text-xs">
-                      <div className="text-center">
-                        <p className="font-semibold text-blue-600">{dayData.totalOrders}</p>
-                        <p className="text-gray-500">Orders</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-green-600">{dayData.totalRewards}</p>
-                        <p className="text-gray-500">Rewards</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-purple-600">₹{dayData.totalEarnings}</p>
-                        <p className="text-gray-500">Earnings</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Customer List */}
-                  {dayData.customers.length > 0 ? (
-                    <div className="flex-1 overflow-y-auto space-y-1">
-                      {dayData.customers.slice(0, 3).map((customer, customerIndex) => (
-                        <div key={customerIndex} className="bg-gray-50 rounded p-1 text-xs">
-                          <p className="font-medium text-gray-900 truncate">{customer.customerName}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            {customer.orders > 0 && (
-                              <span className="bg-blue-100 text-blue-700 px-1 rounded text-xs">
-                                {customer.orders}
-                              </span>
-                            )}
-                            {customer.rewards > 0 && (
-                              <span className="bg-green-100 text-green-700 px-1 rounded text-xs flex items-center gap-1">
-                                <Gift className="h-2 w-2" />
-                                {customer.rewards}
-                              </span>
-                            )}
-                            {customer.totalSpent > 0 && (
-                              <span className="text-purple-600 font-medium text-xs">
-                                ₹{customer.totalSpent}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {dayData.customers.length > 3 && (
-                        <div className="text-center text-xs text-gray-500">
-                          +{dayData.customers.length - 3} more
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-gray-400 text-xs text-center">No transactions</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
@@ -538,7 +348,7 @@ export default function EarningsPage() {
               <div className="flex items-center gap-2 bg-slate-100 rounded-2xl p-1">
                 <Select 
                   value={timeFilter.period} 
-                  onValueChange={(value) => setTimeFilter(prev => ({ ...prev, period: value as any }))}
+                  onValueChange={(value) => setTimeFilter(prev => ({ ...prev, period: value as "today" | "week" | "month" | "year" | "all" }))}
                 >
                   <SelectTrigger className="w-48 h-12 border-0 bg-transparent focus:ring-0">
                     <SelectValue />
@@ -681,7 +491,7 @@ export default function EarningsPage() {
             </CardHeader>
 
             <CardContent className="p-8">
-              <TabsContent value="overview" className="space-y-8">
+              <TabsContent value="overview" className="space-y-8 m-10">
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                   <Card className="border-0 shadow-lg rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100">
@@ -717,7 +527,7 @@ export default function EarningsPage() {
                                 borderRadius: '12px',
                                 boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
                               }}
-                              formatter={(value: any) => [`₹${value}`, 'Earnings']}
+                              formatter={(value: number) => [`₹${value}`, 'Earnings']}
                             />
                             <Bar 
                               dataKey="earnings" 
@@ -769,7 +579,7 @@ export default function EarningsPage() {
                                 borderRadius: '12px',
                                 boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
                               }}
-                              formatter={(value: any) => [`₹${value}`, 'Earnings']}
+                              formatter={(value: number) => [`₹${value}`, 'Earnings']}
                             />
                             <Line 
                               type="monotone" 
@@ -900,7 +710,7 @@ export default function EarningsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {earningsData.yearlyEarnings.map((year, index) => (
+                        {earningsData.yearlyEarnings.map((year) => (
                           <div key={year.year} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                             <div>
                               <p className="font-semibold text-gray-900 text-lg">{year.year}</p>
@@ -1083,7 +893,7 @@ export default function EarningsPage() {
                                   </TableCell>
                                 </TableRow>
                               ) : (
-                                filteredTransactions.map((transaction, index) => (
+                                filteredTransactions.map((transaction) => (
                                   <TableRow key={transaction._id} className="hover:bg-slate-50 transition-colors">
                                     <TableCell>
                                       <div>
@@ -1150,7 +960,7 @@ export default function EarningsPage() {
                         ) : (
                           <div className="max-h-96 overflow-y-auto p-4">
                             <div className="space-y-3">
-                              {filteredTransactions.map((transaction, index) => (
+                              {filteredTransactions.map((transaction) => (
                                 <div key={transaction._id} className="bg-slate-50 rounded-xl p-4 space-y-3">
                                   {/* Customer Info */}
                                   <div className="flex items-center justify-between">

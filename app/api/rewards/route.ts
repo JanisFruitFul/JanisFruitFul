@@ -3,6 +3,17 @@ import connectDB from "@/app/lib/mongodb";
 import Customer from "@/backend/models/Customer";
 import { NextResponse } from "next/server";
 
+interface Order {
+  isReward: boolean
+}
+
+interface CategoryData {
+  paid: number
+  earned: number
+  claimed: number
+  status: string
+}
+
 // Simple timeout wrapper
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
@@ -75,7 +86,7 @@ export async function GET(req: Request) {
             });
           }
         }
-        const totalPaidDrinks = customer.orders.filter((order: any) => !order.isReward).length;
+        const totalPaidDrinks = customer.orders.filter((order: Order) => !order.isReward).length;
         const totalRewardsEarned = customer.rewardsEarned || 0;
         return NextResponse.json({
           customer: {
@@ -141,7 +152,7 @@ export async function GET(req: Request) {
         }
 
         // Calculate overall stats for backward compatibility
-        const totalPaidDrinks = customer.orders.filter((order: any) => !order.isReward).length;
+        const totalPaidDrinks = customer.orders.filter((order: Order) => !order.isReward).length;
         const totalRewardsEarned = customer.rewardsEarned || 0;
 
         return {
@@ -164,7 +175,7 @@ export async function GET(req: Request) {
       let totalUpcomingRewards = 0;
       
       rewardCustomers.forEach(customer => {
-        customer.rewards.forEach((category: any) => {
+        customer.rewards.forEach((category: CategoryData) => {
           if (category.status === "ready") totalReadyRewards += category.pending;
           if (category.status === "upcoming") totalUpcomingRewards += 1;
         });

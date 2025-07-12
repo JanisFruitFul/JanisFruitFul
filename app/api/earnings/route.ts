@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/server-auth"
 
 interface Transaction {
@@ -15,10 +15,19 @@ interface Transaction {
   isReward: boolean
 }
 
-export async function GET(request: Request) {
+interface Order {
+  _id?: string
+  itemName?: string
+  drinkType?: string
+  price?: number
+  date?: string
+  isReward?: boolean
+}
+
+export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const authResult = await requireAuth(request as any)
+    const authResult = await requireAuth(request)
     if ('error' in authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -27,8 +36,6 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'month'
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
 
     // Get all customers with their orders
     const customers = await Customer.find({}).populate('orders')
@@ -37,11 +44,10 @@ export async function GET(request: Request) {
     const allTransactions: Transaction[] = []
     let totalEarnings = 0
     let totalOrders = 0
-    let totalRewards = 0
 
     customers.forEach(customer => {
       if (customer.orders && Array.isArray(customer.orders)) {
-        customer.orders.forEach((order: any) => {
+        customer.orders.forEach((order: Order) => {
           const transaction = {
             _id: order._id || Math.random().toString(),
             customerName: customer.name,
@@ -56,7 +62,7 @@ export async function GET(request: Request) {
           allTransactions.push(transaction)
           
           if (order.isReward) {
-            totalRewards++
+            // totalRewards++ - removed unused variable
           } else {
             totalOrders++
             totalEarnings += order.price || 0
@@ -69,7 +75,7 @@ export async function GET(request: Request) {
     let filteredTransactions = allTransactions
     if (period !== 'all') {
       const now = new Date()
-      let startDateFilter = new Date()
+      const startDateFilter = new Date()
       
       switch (period) {
         case 'today':
@@ -198,15 +204,7 @@ export async function GET(request: Request) {
 
     const averageOrderValue = totalOrders > 0 ? totalEarnings / totalOrders : 0
 
-    // Add some debugging
-    console.log('Earnings API Debug:', {
-      totalCustomers: customers.length,
-      totalTransactions: allTransactions.length,
-      filteredTransactions: filteredTransactions.length,
-      totalEarnings,
-      totalOrders,
-      sampleTransactions: filteredTransactions.slice(0, 3)
-    })
+
 
     return NextResponse.json({
       totalEarnings,

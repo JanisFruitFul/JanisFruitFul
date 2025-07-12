@@ -1,18 +1,15 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Award,
   Gift,
-  MessageCircle,
   Target,
   Coffee,
   Users,
@@ -247,7 +244,7 @@ export function CustomerProgressModal({
                         onClick={() => onSendWhatsApp(customer, category)}
                         className="flex-1 text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm"
                       >
-                        <MessageCircle className="h-4 w-4 mr-1" />
+                        <Gift className="h-4 w-4 mr-1" />
                         Remind
                       </Button>
                     </div>
@@ -259,7 +256,7 @@ export function CustomerProgressModal({
                 <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-500">No category rewards yet</p>
                 <p className="text-sm text-gray-400 mt-1">
-                  This customer hasn't earned any rewards yet
+                  This customer hasn&apos;t earned any rewards yet
                 </p>
               </div>
             )}

@@ -13,13 +13,10 @@ import {
 } from "@/components/ui/card";
 import { getApiUrl } from "@/lib/config";
 import {
-  Award,
   Gift,
   MessageCircle,
-  Target,
   TrendingUp,
   Users,
-  Coffee,
   Eye,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -70,7 +67,6 @@ export default function RewardsPage() {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 Fetching rewards from:', getApiUrl('api/rewards'));
       const response = await fetch(getApiUrl('api/rewards'));
       
       if (!response.ok) {
@@ -78,7 +74,6 @@ export default function RewardsPage() {
       }
       
       const data = await response.json();
-      console.log('📊 Received rewards data:', data);
       
       // Check if data has the expected structure
       if (!data || !data.customers || !Array.isArray(data.customers)) {
@@ -109,12 +104,11 @@ export default function RewardsPage() {
   };
 
   const sendWhatsAppReminder = (customer: RewardCustomer, category: CategoryReward) => {
-    const message = `Hi ${customer.name}, You're just ${
-      category.drinksUntilReward
-    } ${category.category} drink${
-      category.drinksUntilReward > 1 ? "s" : ""
-    } away from a free reward! Visit us soon to claim your free ${category.category}. Keep the streak going! 💥  
-We can't wait to see you again 😊`;
+    const message = `Hey ${customer.name}! 🎉
+You're SO close to unlocking your FREE ${category.category} reward! ${getCategoryIcon(category.category)}✨
+Your loyalty streak is amazing and we can't wait to give you your well-deserved treat! 
+Come visit us soon and claim your free ${category.category} - you've earned it! 🎁💫
+See you at Jani's Fruitful! 😊`;
     const whatsappUrl = `https://api.whatsapp.com/send?phone=91${
       customer.phone
     }&text=${encodeURIComponent(message)}`;
@@ -123,15 +117,7 @@ We can't wait to see you again 😊`;
 
   const claimReward = async (customer: RewardCustomer, category: CategoryReward) => {
     try {
-      console.log('🎁 Attempting to claim reward:', {
-        customerId: customer._id,
-        customerName: customer.name,
-        category: category.category,
-        pending: category.pending
-      });
-
       const apiUrl = getApiUrl(`api/customers/${customer._id}/claim-reward`);
-      console.log('🌐 Claim reward URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -141,17 +127,11 @@ We can't wait to see you again 😊`;
         })
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error('❌ Claim reward failed:', errorData);
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-
-      const result = await response.json();
-      console.log('✅ Claim reward successful:', result);
 
       // Refresh the rewards data
       await fetchRewards();
@@ -169,32 +149,6 @@ We can't wait to see you again 😊`;
   const closeCustomerModal = () => {
     setSelectedCustomer(null);
     setIsModalOpen(false);
-  };
-
-  const getCardStyle = (status: string) => {
-    switch (status) {
-      case "earned":
-        return "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:shadow-green-100";
-      case "ready":
-        return "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-blue-100";
-      case "upcoming":
-        return "bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200 hover:shadow-yellow-100";
-      default:
-        return "bg-gradient-to-br from-red-50 to-rose-50 border-red-200 hover:shadow-red-100";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "earned":
-        return <Award className="h-5 w-5 text-green-600" />;
-      case "ready":
-        return <Gift className="h-5 w-5 text-blue-600" />;
-      case "upcoming":
-        return <Target className="h-5 w-5 text-yellow-600" />;
-      default:
-        return <Coffee className="h-5 w-5 text-red-600" />;
-    }
   };
 
   const getCategoryIcon = (category: string) => {

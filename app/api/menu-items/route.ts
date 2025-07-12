@@ -1,14 +1,9 @@
 import cloudinary from "@/backend/cloudinary";
-import connectDB from "@/backend/lib/mongodb";
 import MenuItem from "@/backend/models/MenuItem";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    console.log("=== Starting POST request to /api/menu-items ===");
-    
-    const connection = await connectDB();
-    console.log("Database connection status:", connection ? "Connected" : "Not connected");
     
     // Parse FormData
     const formData = await req.formData();
@@ -17,15 +12,6 @@ export async function POST(req: Request) {
     const price = formData.get("price") as string;
     const description = formData.get("description") as string;
     const imageFile = formData.get("image") as File;
-    
-    console.log("Received form data:", { 
-      name, 
-      category, 
-      price, 
-      description, 
-      imageFile: imageFile?.name,
-      imageFileSize: imageFile?.size 
-    });
 
     // Validate required fields
     if (!name || !category || !price || !imageFile) {
@@ -61,28 +47,13 @@ export async function POST(req: Request) {
       const apiKey = process.env.CLOUDINARY_API_KEY;
       const apiSecret = process.env.CLOUDINARY_API_SECRET;
       
-      console.log("Cloudinary credentials check:", {
-        cloudName: !!cloudName,
-        apiKey: !!apiKey,
-        apiSecret: !!apiSecret
-      });
-      
       if (!cloudName || !apiKey || !apiSecret) {
-        console.log("Cloudinary credentials not found, using placeholder image");
         imageUrl = "/placeholder.svg?height=200&width=200";
       } else {
         try {
-          console.log("Uploading image to Cloudinary...");
-          console.log("Image file details:", {
-            name: imageFile.name,
-            size: imageFile.size,
-            type: imageFile.type
-          });
-          
           // Convert File to buffer
           const bytes = await imageFile.arrayBuffer();
           const buffer = Buffer.from(bytes);
-          console.log("Buffer created, size:", buffer.length);
           
           // Upload to Cloudinary
           const result = await new Promise((resolve, reject) => {
@@ -93,10 +64,8 @@ export async function POST(req: Request) {
               },
               (error, result) => {
                 if (error) {
-                  console.error("Cloudinary upload callback error:", error);
                   reject(error);
                 } else {
-                  console.log("Cloudinary upload callback success:", result);
                   resolve(result);
                 }
               }
@@ -105,31 +74,15 @@ export async function POST(req: Request) {
           
           if (result && typeof result === 'object' && 'secure_url' in result) {
             imageUrl = result.secure_url as string;
-            console.log("Image uploaded successfully:", imageUrl);
           } else {
-            console.error("Invalid Cloudinary result:", result);
             throw new Error("Failed to get secure URL from Cloudinary");
           }
-        } catch (uploadError) {
-          console.error("Cloudinary upload error:", uploadError);
-          console.error("Upload error stack:", uploadError instanceof Error ? uploadError.stack : "No stack trace");
-          
+        } catch {
           // Continue with placeholder image instead of failing
-          console.log("Using placeholder image due to upload failure");
           imageUrl = "/placeholder.svg?height=200&width=200";
         }
       }
     }
-
-    // Create menu item
-    console.log("Attempting to create menu item with data:", {
-      name: name.trim(),
-      category: category,
-      price: priceNum,
-      description: description.trim() || undefined,
-      image: imageUrl,
-      isActive: true,
-    });
 
     const menuItem = await MenuItem.create({
       name: name.trim(),
@@ -139,9 +92,6 @@ export async function POST(req: Request) {
       image: imageUrl,
       isActive: true,
     });
-
-    console.log("Successfully created menu item:", menuItem);
-    console.log("Menu item ID:", menuItem._id);
     
     return NextResponse.json(menuItem, { status: 201 });
   } catch (error) {
@@ -177,13 +127,8 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    console.log("=== Starting GET request to /api/menu-items ===");
-    
-    const connection = await connectDB();
-    console.log("Database connection status:", connection ? "Connected" : "Not connected");
     
     const menuItems = await MenuItem.find({}).sort({ createdAt: -1 });
-    console.log(`Found ${menuItems.length} menu items in database`);
     
     return NextResponse.json(menuItems);
   } catch (error) {

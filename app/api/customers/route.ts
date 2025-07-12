@@ -2,7 +2,18 @@ import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic'
+
+interface Order {
+  isReward: boolean
+  price: number
+}
+
+export async function GET(
+  request: NextRequest,
+  { searchParams }: { searchParams: URLSearchParams }
+) {
   try {
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
@@ -12,7 +23,11 @@ export async function GET(request: NextRequest) {
 
     await connectDB()
 
-    const { searchParams } = new URL(request.url)
+    // Handle static generation - if searchParams is not available, return empty array
+    if (!searchParams) {
+      return NextResponse.json([])
+    }
+
     const phone = searchParams.get('phone')
 
     // If phone number is provided, return customer details with rewards info
@@ -25,8 +40,8 @@ export async function GET(request: NextRequest) {
 
       // Calculate rewards information
       const totalDrinks = customer.orders.length
-      const paidDrinks = customer.orders.filter((order: any) => !order.isReward).length
-      const rewardsEarned = customer.orders.filter((order: any) => order.isReward).length
+      const paidDrinks = customer.orders.filter((order: Order) => !order.isReward).length
+      const rewardsEarned = customer.orders.filter((order: Order) => order.isReward).length
       
       // Calculate drinks needed for next reward (every 5 paid drinks = 1 reward)
       const effectivePaidDrinks = paidDrinks - (rewardsEarned * 5)

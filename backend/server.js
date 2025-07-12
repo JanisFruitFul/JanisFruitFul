@@ -216,7 +216,6 @@ app.post('/api/menu-items', upload.single('image'), async (req, res) => {
         });
 
         imageUrl = uploadResult.secure_url;
-        console.log('Image uploaded to Cloudinary:', imageUrl);
       } catch (uploadError) {
         console.error('Cloudinary upload error:', uploadError);
         // Continue with placeholder image if upload fails
@@ -279,7 +278,6 @@ app.put('/api/menu-items/:id', upload.single('image'), async (req, res) => {
         });
 
         imageUrl = uploadResult.secure_url;
-        console.log('Image uploaded to Cloudinary:', imageUrl);
       } catch (uploadError) {
         console.error('Cloudinary upload error:', uploadError);
         // Keep existing image if upload fails
@@ -819,17 +817,10 @@ app.get('/api/rewards', async (req, res) => {
 // Start server
 async function startServer() {
   try {
-    console.log('🚀 Starting JaniFruitful Backend Server...');
-    console.log('📡 Environment:', process.env.NODE_ENV || 'development');
-    console.log('🔗 Port:', port);
-    
     await connectDB();
-    console.log('✅ MongoDB connected successfully');
     
     app.listen(port, () => {
-      console.log(`🎉 Backend server ready on http://localhost:${port}`);
-      console.log(`📊 Health check: http://localhost:${port}/health`);
-      console.log(`🎁 Rewards API: http://localhost:${port}/api/rewards`);
+      // Server started successfully
     });
   } catch (err) {
     console.error('❌ Server startup failed:', err.message);

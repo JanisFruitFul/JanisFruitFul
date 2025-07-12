@@ -27,7 +27,6 @@ async function connectDB() {
             bufferCommands: false,
         };
         cached.promise = mongoose_1.default.connect(MONGODB_URI, opts).then((mongoose) => {
-            console.log("Connected to MongoDB Atlas");
             return mongoose;
         });
     }

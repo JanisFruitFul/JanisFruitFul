@@ -89,6 +89,13 @@ interface Customer {
   drinksUntilReward: number
 }
 
+interface CustomerData {
+  name?: string;
+  phone?: string;
+  totalOrders?: number;
+  drinksUntilReward?: number;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
@@ -101,7 +108,6 @@ export default function DashboardPage() {
   const [dailyChartData, setDailyChartData] = useState<ChartData[]>([])
   const [dailyEarnings, setDailyEarnings] = useState<DailyEarnings[]>([])
   const [showStats, setShowStats] = useState(true)
-  const [showChart, setShowChart] = useState(true)
   const [showCalendar, setShowCalendar] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
@@ -127,13 +133,7 @@ export default function DashboardPage() {
     loadData()
   }, [])
 
-  useEffect(() => {
-    console.log('Daily chart data updated:', dailyChartData)
-  }, [dailyChartData])
 
-  useEffect(() => {
-    console.log('Stats data updated:', stats)
-  }, [stats])
 
   const fetchStats = async () => {
     try {
@@ -142,12 +142,11 @@ export default function DashboardPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
-      console.log('Dashboard stats received:', data)
       
       // Ensure recentCustomers have the required fields
       const processedData = {
         ...data,
-        recentCustomers: data.recentCustomers?.map((customer: any) => ({
+        recentCustomers: data.recentCustomers?.map((customer: CustomerData) => ({
           name: customer.name || 'Unknown',
           phone: customer.phone || 'N/A',
           totalOrders: customer.totalOrders || 0,
@@ -190,7 +189,6 @@ export default function DashboardPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
-      console.log('Chart data received:', data)
       
       // Use the same data as the calendar
       const chartData = data.dailyEarnings || []
@@ -231,13 +229,11 @@ export default function DashboardPage() {
   };
 
   const sendWhatsAppReminder = (customer: Customer) => {
-    const message = `Hi ${customer.name}, You're just ${
-      customer.drinksUntilReward
-    } drink${
-      customer.drinksUntilReward > 1 ? "s" : ""
-    } away from a FREE reward! 🥤🎁  
-Keep the streak going and claim your free drink! 💥  
-We can't wait to see you again 😊`
+    const message = `Hey ${customer.name}! 🎉
+You're SO close to unlocking your FREE drink reward! 🥤✨
+Your loyalty streak is amazing and we can't wait to give you your well-deserved treat! 
+Come visit us soon and claim your free drink - you've earned it! 🎁💫
+See you at Jani's Fruitful! 😊`
     const whatsappUrl = `https://api.whatsapp.com/send?phone=91${customer.phone}&text=${encodeURIComponent(
       message
     )}`
@@ -485,7 +481,7 @@ We can't wait to see you again 😊`
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4">
-                {dailyEarnings.slice(0, 12).map((day, index) => (
+                {dailyEarnings.slice(0, 12).map((day) => (
                   <div 
                     key={day.date} 
                     className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:scale-105"

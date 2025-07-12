@@ -4,10 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    console.log("=== Testing database connection and schema ===");
-    
     const connection = await connectDB();
-    console.log("Database connection status:", connection ? "Connected" : "Not connected");
     
     if (!connection) {
       return NextResponse.json({ error: "Database not connected" }, { status: 500 });
@@ -23,15 +20,11 @@ export async function GET() {
       isActive: true,
     });
     
-    console.log("Test item created:", testItem);
-    
     // Find the test item
     const foundItem = await MenuItem.findById(testItem._id);
-    console.log("Test item found:", foundItem);
     
     // Delete the test item
     await MenuItem.findByIdAndDelete(testItem._id);
-    console.log("Test item deleted");
     
     return NextResponse.json({
       success: true,

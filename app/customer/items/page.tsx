@@ -2,12 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
 import {
-  ArrowLeft,
   CheckCircle,
   Clock,
   Coffee,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -30,9 +28,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogClose,
+  DialogDescription
 } from "@/components/ui/dialog";
+import Image from "next/image";
 // Animation hook for scroll-triggered animations
 const useScrollAnimation = (threshold: number = 0.1) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -75,40 +73,32 @@ export default function CustomerItemsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [apiStatus, setApiStatus] = useState<string>("Loading...");
   const [heroRef, heroVisible] = useScrollAnimation();
   const [menuRef, menuVisible] = useScrollAnimation();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    console.log('🚀 Customer items page mounted');
     fetchMenuItems();
   }, []);
 
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      setApiStatus("Fetching menu items...");
       
       const response = await fetch(getApiUrl('api/menu'));
-      console.log('📡 Menu response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Menu items received:', data.length, 'items');
         
         setMenuItems(data);
-        setApiStatus(`✅ Loaded ${data.length} items`);
       } else {
         console.error("Failed to fetch menu items");
         setMenuItems([]);
-        setApiStatus("❌ Failed to fetch menu items");
       }
     } catch (err) {
       console.error("Error fetching menu items:", err);
       setMenuItems([]);
-      setApiStatus(`❌ Error: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -197,9 +187,11 @@ export default function CustomerItemsPage() {
               <div className="flex flex-col items-center gap-4 mt-2">
                 <div className="w-40 h-40 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
                   {selectedItem.image ? (
-                    <img
+                    <Image
                       src={selectedItem.image}
                       alt={selectedItem.name}
+                      width={160}
+                      height={160}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -321,7 +313,7 @@ export default function CustomerItemsPage() {
             </div>
             {/* Items Grid Skeleton */}
             <div className="space-y-8">
-              {(selectedCategory === "all" ? categories.filter(c => c !== "all") : [selectedCategory]).map((category, idx) => (
+              {(selectedCategory === "all" ? categories.filter(c => c !== "all") : [selectedCategory]).map((category) => (
                 <div key={category} className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
                     {getCategoryIcon(category)}
@@ -390,9 +382,11 @@ export default function CustomerItemsPage() {
                               <div className="text-center">
                                 <div className="w-40 h-40 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
                                   {item.image ? (
-                                    <img
+                                    <Image
                                       src={item.image}
                                       alt={item.name}
+                                      width={160}
+                                      height={160}
                                       className="w-full h-full object-cover"
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';

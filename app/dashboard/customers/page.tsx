@@ -80,18 +80,11 @@ export default function CustomersPage() {
   const sendWhatsAppReminder = (customer: Customer, e: React.MouseEvent) => {
     e.stopPropagation()
     
-    // Calculate drinks needed for reward
-    const paidDrinks = customer.orders.filter(order => !order.isReward).length;
-    const effectivePaidDrinks = paidDrinks - (customer.rewardsEarned * 5);
-    const progressTowardReward = effectivePaidDrinks % 5;
-    const drinksUntilReward = progressTowardReward === 0 && effectivePaidDrinks > 0 ? 0 : 5 - progressTowardReward;
-    
-    const message = `Hi ${customer.name}, You're just ${
-      drinksUntilReward
-    } drink${
-      drinksUntilReward > 1 ? "s" : ""
-    } away from a free reward! Visit us soon.Keep the streak going and claim your free drink! 💥  
-We can't wait to see you again 😊`
+    const message = `Hey ${customer.name}! 🎉 
+You're SO close to unlocking your FREE drink reward! 🥤✨
+Your loyalty streak is amazing and we can't wait to give you your well-deserved treat! 
+Come visit us soon and claim your free drink - you've earned it! 🎁💫
+See you at Jani's Fruitful! 😊`
     const whatsappUrl = `https://api.whatsapp.com/send?phone=91${customer.phone}&text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, "_blank")
   }

@@ -2,6 +2,11 @@ import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
 import { NextRequest, NextResponse } from "next/server"
 
+interface Order {
+  drinkType: string
+  isReward: boolean
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; category: string } }
@@ -18,7 +23,7 @@ export async function GET(
       )
     }
 
-    const categoryOrders = customer.orders.filter((order: any) => order.drinkType === category)
+    const categoryOrders = customer.orders.filter((order: Order) => order.drinkType === category)
     
     return NextResponse.json({
       success: true,
@@ -29,8 +34,8 @@ export async function GET(
       category,
       orders: categoryOrders,
       totalOrders: categoryOrders.length,
-      paidOrders: categoryOrders.filter((order: any) => !order.isReward).length,
-      rewardOrders: categoryOrders.filter((order: any) => order.isReward).length,
+      paidOrders: categoryOrders.filter((order: Order) => !order.isReward).length,
+      rewardOrders: categoryOrders.filter((order: Order) => order.isReward).length,
     })
   } catch (error) {
     console.error("Error fetching customer drinks:", error)

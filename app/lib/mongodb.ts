@@ -9,6 +9,7 @@ if (!MONGODB_URI) {
 
 // Extend global type to include mongoose
 declare global {
+  // eslint-disable-next-line no-var
   var mongoose: {
     conn: typeof mongoose | null;
     promise: Promise<typeof mongoose> | null;
@@ -45,7 +46,6 @@ async function connectDB() {
     }
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log("Connected to MongoDB Atlas")
       return mongoose
     }).catch((error) => {
       console.error("MongoDB connection error:", error)

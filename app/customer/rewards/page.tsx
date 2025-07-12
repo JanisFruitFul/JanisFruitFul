@@ -52,12 +52,6 @@ export default function RewardsPage() {
   const [filteredCustomers, setFilteredCustomers] = useState<RewardCustomer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
-  const [stats, setStats] = useState({
-    totalRewardsGiven: 0,
-    customersWithRewards: 0,
-    upcomingRewards: 0,
-    readyRewards: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<RewardCustomer | null>(null);
@@ -97,7 +91,6 @@ export default function RewardsPage() {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔍 Fetching rewards from:', getApiUrl('api/rewards'));
       const response = await fetch(getApiUrl('api/rewards'));
       
       if (!response.ok) {
@@ -105,7 +98,6 @@ export default function RewardsPage() {
       }
       
       const data = await response.json();
-      console.log('📊 Received rewards data:', data);
       
       // Check if data has the expected structure
       if (!data || !data.customers || !Array.isArray(data.customers)) {
@@ -114,78 +106,13 @@ export default function RewardsPage() {
       }
   
       setRewardCustomers(data.customers);
-      setStats(data.stats || {
-        totalRewardsGiven: 0,
-        customersWithRewards: 0,
-        upcomingRewards: 0,
-        readyRewards: 0,
-      });
     } catch (error) {
       console.error("❌ Failed to fetch reward data:", error);
       setError(error instanceof Error ? error.message : 'Failed to fetch reward data');
       setRewardCustomers([]);
       setFilteredCustomers([]);
-      setStats({
-        totalRewardsGiven: 0,
-        customersWithRewards: 0,
-        upcomingRewards: 0,
-        readyRewards: 0,
-      });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const sendWhatsAppReminder = (customer: RewardCustomer, category: CategoryReward) => {
-    const message = `Hi ${customer.name}, You're just ${
-      category.drinksUntilReward
-    } ${category.category} drink${
-      category.drinksUntilReward > 1 ? "s" : ""
-    } away from a free reward! Visit us soon to claim your free ${category.category}. Keep the streak going! 💥  
-We can't wait to see you again 😊`;
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=91${
-      customer.phone
-    }&text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
-  };
-
-  const claimReward = async (customer: RewardCustomer, category: CategoryReward) => {
-    try {
-      console.log('🎁 Attempting to claim reward:', {
-        customerId: customer._id,
-        customerName: customer.name,
-        category: category.category,
-        pending: category.pending
-      });
-
-      const apiUrl = getApiUrl(`api/customers/${customer._id}/claim-reward`);
-      console.log('🌐 Claim reward URL:', apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: category.category
-        })
-      });
-
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Claim reward failed:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Claim reward successful:', result);
-
-      // Refresh the rewards data
-      await fetchRewards();
-    } catch (error) {
-      console.error('❌ Error claiming reward:', error);
-      alert(`Failed to claim reward: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -557,7 +484,7 @@ We can't wait to see you again 😊`;
                       </div>
                       <h3 className="text-xl font-semibold text-gray-700 mb-2">No customers found</h3>
                       <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        No customers found matching "{activeSearch}". Try searching with a different mobile number.
+                        No customers found matching &ldquo;{activeSearch}&rdquo;. Try searching with a different mobile number.
                       </p>
                       <Button
                         variant="outline"
@@ -581,8 +508,6 @@ We can't wait to see you again 😊`;
           customer={selectedCustomer}
           isOpen={isModalOpen}
           onClose={closeCustomerModal}
-          onClaimReward={claimReward}
-          onSendWhatsApp={sendWhatsAppReminder}
         />
       </div>
     </div>

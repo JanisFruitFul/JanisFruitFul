@@ -33,7 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { getApiUrl } from "@/lib/config";
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
 interface MenuItem {
@@ -88,15 +88,7 @@ export default function ManageItemsPage() {
   // Combine default and dynamic categories, removing duplicates
   const categories = [...new Set([...defaultCategories, ...dynamicCategories])];
 
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
-
-  useEffect(() => {
-    filterAndSortItems();
-  }, [menuItems, searchTerm, selectedCategory, statusFilter, sortBy]);
-
-  const filterAndSortItems = () => {
+  const filterAndSortItems = useCallback(() => {
     let filtered = [...menuItems];
 
     // Filter by search term
@@ -139,7 +131,15 @@ export default function ManageItemsPage() {
     });
 
     setFilteredItems(filtered);
-  };
+  }, [menuItems, searchTerm, selectedCategory, statusFilter, sortBy]);
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  useEffect(() => {
+    filterAndSortItems();
+  }, [filterAndSortItems]);
 
   const fetchMenuItems = async () => {
     try {
@@ -305,15 +305,7 @@ export default function ManageItemsPage() {
       // Determine which category to use
       const finalCategory = useCustomCategory ? customCategory.trim() : category;
 
-      console.log("Form validation:", {
-        name: !!name,
-        finalCategory: !!finalCategory,
-        price: !!price,
-        addImageFile: !!addImageFile,
-        useCustomCategory,
-        category,
-        customCategory
-      });
+
 
       if (!name || !finalCategory || !price || !addImageFile) {
         toast.error("Please fill in all required fields");
@@ -329,23 +321,14 @@ export default function ManageItemsPage() {
       formData.append("description", description.trim() || "");
       formData.append("image", addImageFile);
 
-      console.log("Submitting form data:", {
-        name: name.trim(),
-        category: finalCategory,
-        price: price,
-        description: description.trim() || "",
-        imageFile: addImageFile?.name,
-        useCustomCategory
-      });
+
 
       const response = await fetch(getApiUrl('api/menu-items'), {
         method: "POST",
         body: formData,
       });
 
-      console.log("Response status:", response.status);
       const responseData = await response.json();
-      console.log("Response data:", responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || "Failed to create menu item");
@@ -543,7 +526,7 @@ export default function ManageItemsPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
             <p className="text-gray-500 mb-4">
-              Try adjusting your search terms or filters to find what you're looking for.
+              Try adjusting your search terms or filters to find what you&apos;re looking for.
             </p>
             <Button variant="outline" onClick={clearFilters}>
               Clear all filters

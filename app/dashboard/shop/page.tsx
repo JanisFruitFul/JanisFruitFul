@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getApiUrl } from "@/lib/config";
 import { Check, Minus, Plus, Search, ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface MenuItem {
   _id: string
@@ -48,15 +48,7 @@ export default function ShopPage() {
   // Combine default and dynamic categories, removing duplicates
   const categories = [...new Set([...defaultCategories, ...dynamicCategories])]
 
-  useEffect(() => {
-    fetchMenuItems()
-  }, [])
-
-  useEffect(() => {
-    filterAndSortItems()
-  }, [menuItems, searchTerm, selectedCategory, sortBy])
-
-  const filterAndSortItems = () => {
+  const filterAndSortItems = useCallback(() => {
     let filtered = [...menuItems]
 
     // Filter by search term
@@ -88,7 +80,15 @@ export default function ShopPage() {
     })
 
     setFilteredItems(filtered)
-  }
+  }, [menuItems, searchTerm, selectedCategory, sortBy])
+
+  useEffect(() => {
+    fetchMenuItems()
+  }, [])
+
+  useEffect(() => {
+    filterAndSortItems()
+  }, [filterAndSortItems])
 
   const fetchMenuItems = async () => {
     try {
@@ -288,7 +288,7 @@ export default function ShopPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
             <p className="text-gray-500 mb-4">
-              Try adjusting your search terms or filters to find what you're looking for.
+              Try adjusting your search terms or filters to find what you&apos;re looking for.
             </p>
             <Button 
               variant="outline" 

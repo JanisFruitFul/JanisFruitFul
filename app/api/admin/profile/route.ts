@@ -4,6 +4,11 @@ import Customer from "@/backend/models/Customer"
 import Shop from "@/backend/models/Shop"
 import { type NextRequest, NextResponse } from "next/server"
 
+interface Order {
+  isReward: boolean
+  price: number
+}
+
 export async function GET() {
   try {
     await connectDB()
@@ -25,7 +30,7 @@ export async function GET() {
     const totalRevenue = customers.reduce((sum, customer) => {
       return (
         sum +
-        customer.orders.reduce((orderSum: number, order: any) => {
+        customer.orders.reduce((orderSum: number, order: Order) => {
           return orderSum + (order.isReward ? 0 : order.price)
         }, 0)
       )

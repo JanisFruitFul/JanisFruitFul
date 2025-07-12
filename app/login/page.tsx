@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
-  const { login, isAuthenticated } = useAuth()
+  const { login } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +28,6 @@ export default function LoginPage() {
 
     try {
       const apiUrl = getApiUrl('api/admin/login');
-      console.log('🔐 Attempting login to:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -37,9 +36,6 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ email, password }),
       })
-
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         // Handle different HTTP status codes
@@ -53,7 +49,6 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
-      console.log('📄 Response data:', data);
 
       if (response.ok && data.success) {
         // Use the auth context to handle login
