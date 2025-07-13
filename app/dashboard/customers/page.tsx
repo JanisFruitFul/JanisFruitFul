@@ -84,6 +84,9 @@ export default function CustomersPage() {
 You're SO close to unlocking your FREE drink reward! 🥤✨
 Your loyalty streak is amazing and we can't wait to give you your well-deserved treat! 
 Come visit us soon and claim your free drink - you've earned it! 🎁💫
+
+Check your rewards score here: https://janis-fruitful.vercel.app
+
 See you at Jani's Fruitful! 😊`
     const whatsappUrl = `https://api.whatsapp.com/send?phone=91${customer.phone}&text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, "_blank")

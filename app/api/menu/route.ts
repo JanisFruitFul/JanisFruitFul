@@ -1,6 +1,7 @@
 import connectDB from "@/backend/lib/mongodb"
 import MenuItem from "@/backend/models/MenuItem"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
 export async function GET() {
   try {
@@ -21,8 +22,14 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Check authentication for admin operations
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
       return NextResponse.json({ success: false, message: "Database not configured" }, { status: 503 })

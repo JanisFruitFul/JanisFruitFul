@@ -1,9 +1,16 @@
 import connectDB from "@/backend/lib/mongodb";
 import MenuItem from "@/backend/models/MenuItem";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/server-auth";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // Check authentication for admin operations
+    const authResult = await requireAuth(req)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const connection = await connectDB();
     
     if (!connection) {

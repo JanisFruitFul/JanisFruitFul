@@ -1,5 +1,6 @@
 import MenuItem from "@/backend/models/MenuItem";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/server-auth";
 
 interface MenuItemData {
   _id: unknown
@@ -11,8 +12,14 @@ interface MenuItemData {
   createdAt?: Date
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
       console.warn("MONGODB_URI not set, returning empty array")

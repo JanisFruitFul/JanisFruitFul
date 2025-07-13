@@ -1,6 +1,7 @@
 import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
 interface Order {
   date: Date
@@ -8,8 +9,14 @@ interface Order {
   price: number
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
     
     const customers = await Customer.find()

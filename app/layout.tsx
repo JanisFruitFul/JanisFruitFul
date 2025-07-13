@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -14,6 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://www.google.com/recaptcha/api.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <ProtectedRoute>

@@ -2,9 +2,16 @@ import connectDB from "@/backend/lib/mongodb"
 import Admin from "@/backend/models/Admin"
 import bcrypt from "bcryptjs"
 import { type NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
 export async function PUT(request: NextRequest) {
   try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
 
     const { currentPassword, newPassword } = await request.json()

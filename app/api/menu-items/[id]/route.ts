@@ -1,6 +1,7 @@
 import connectDB from "@/backend/lib/mongodb";
 import MenuItem from "@/backend/models/MenuItem";
 import { type NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/server-auth";
 
 // Import cloudinary with proper path
 import cloudinary from "@/backend/cloudinary";
@@ -11,6 +12,12 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication for admin operations
+    const authResult = await requireAuth(req)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB();
     
     const formData = await req.formData();
@@ -122,6 +129,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication for admin operations
+    const authResult = await requireAuth(req)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB();
     
     const deletedItem = await MenuItem.findByIdAndDelete(params.id);
@@ -149,6 +162,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication for admin operations
+    const authResult = await requireAuth(req)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB();
     
     const body = await req.json();

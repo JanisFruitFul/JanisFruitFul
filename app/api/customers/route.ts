@@ -1,6 +1,7 @@
 import connectDB from "@/backend/lib/mongodb"
 import Customer from "@/backend/models/Customer"
 import { NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,12 @@ export async function GET(
       }
 
       return NextResponse.json(customerData)
+    }
+
+    // If no phone provided, require authentication for admin access
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // If no phone provided, return all customers (for admin dashboard)

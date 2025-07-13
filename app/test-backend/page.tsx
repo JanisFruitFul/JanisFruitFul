@@ -1,174 +1,137 @@
 "use client"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getApiUrl } from "@/lib/config";
-import { useState } from "react";
-
-interface TestResults {
-  health?: {
-    success: boolean;
-    data: unknown;
-  };
-  menu?: {
-    success: boolean;
-    count: number;
-    sample?: {
-      name: string;
-      price: number;
-    };
-  };
-  customer?: {
-    success: boolean;
-    count: number;
-    sample?: {
-      name: string;
-      phone: string;
-      ordersCount: number;
-    };
-  };
-  allCustomers?: {
-    success: boolean;
-    count: number;
-  };
-  error?: string;
-}
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import { getApiUrl } from "@/lib/config"
+import { ReCaptcha } from "@/components/ReCaptcha"
+import { Shield } from "lucide-react"
 
 export default function TestBackendPage() {
-  const [testResults, setTestResults] = useState<TestResults>({});
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState("")
+  const [captchaVerified, setCaptchaVerified] = useState(false)
+  const { toast } = useToast()
 
-  const runAllTests = async () => {
-    setLoading(true);
-    const results: TestResults = {};
+  const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LdmaIErAAAAAMmVu3WBz-OTBkfMvfH9Syplu3Sm"
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token)
+    setCaptchaVerified(true)
+    toast({
+      title: "reCAPTCHA Verified",
+      description: "Security verification completed",
+    })
+  }
+
+  const handleCaptchaExpired = () => {
+    setCaptchaToken("")
+    setCaptchaVerified(false)
+  }
+
+  const handleCaptchaError = () => {
+    setCaptchaToken("")
+    setCaptchaVerified(false)
+    toast({
+      title: "reCAPTCHA Error",
+      description: "Please try again",
+      variant: "destructive",
+    })
+  }
+
+  const testRecaptcha = async () => {
+    if (!captchaVerified) {
+      toast({
+        title: "Verification Required",
+        description: "Please complete the reCAPTCHA verification first",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
 
     try {
-      // Test 1: Health check
-      const healthUrl = getApiUrl('health');
-      const healthResponse = await fetch(healthUrl);
-      const healthData = await healthResponse.json();
-      results.health = { success: healthResponse.ok, data: healthData };
+      const response = await fetch(getApiUrl('api/admin/login'), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          email: "test@example.com", 
+          password: "testpassword", 
+          captchaToken 
+        }),
+      })
 
-      // Test 2: Menu items
-      const menuUrl = getApiUrl('api/menu');
-      const menuResponse = await fetch(menuUrl);
-      const menuData = await menuResponse.json();
-      results.menu = { 
-        success: menuResponse.ok, 
-        count: menuData.length,
-        sample: menuData[0] 
-      };
+      const data = await response.json()
 
-      // Test 3: Customer search
-      const customerUrl = getApiUrl('api/customers?phone=8309664356');
-      const customerResponse = await fetch(customerUrl);
-      const customerData = await customerResponse.json();
-      results.customer = { 
-        success: customerResponse.ok, 
-        count: customerData.length,
-        sample: customerData[0] ? {
-          name: customerData[0].name,
-          phone: customerData[0].phone,
-          ordersCount: customerData[0].orders?.length || 0
-        } : undefined
-      };
-
-      // Test 4: All customers
-      const allCustomersUrl = getApiUrl('api/customers');
-      const allCustomersResponse = await fetch(allCustomersUrl);
-      const allCustomersData = await allCustomersResponse.json();
-      results.allCustomers = { 
-        success: allCustomersResponse.ok, 
-        count: allCustomersData.length
-      };
-
-      setTestResults(results);
-
-    } catch (error) {
-      console.error('❌ Test failed:', error);
-      setTestResults({ error: error instanceof Error ? error.message : 'Unknown error' });
+      if (response.ok) {
+        toast({
+          title: "reCAPTCHA Test Successful",
+          description: "The reCAPTCHA verification is working correctly",
+        })
+      } else {
+        toast({
+          title: "reCAPTCHA Test Failed",
+          description: data.message || "Verification failed",
+          variant: "destructive",
+        })
+      }
+    } catch {
+      toast({
+        title: "Test Error",
+        description: "Failed to test reCAPTCHA verification",
+        variant: "destructive",
+      })
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="container mx-auto py-10 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Backend API Test Suite</CardTitle>
-          <CardDescription>
-            Test all backend APIs to verify they&apos;re working and returning real database data
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            onClick={runAllTests} 
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? 'Running Tests...' : 'Run All Tests'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {Object.keys(testResults).length > 0 && (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Test Results</CardTitle>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2 text-emerald-600" />
+              reCAPTCHA Test
+            </CardTitle>
+            <CardDescription>
+              Test the Google reCAPTCHA v2 integration
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {testResults.error ? (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <h3 className="font-semibold text-red-800">Error</h3>
-                  <p className="text-red-700">{testResults.error}</p>
-                </div>
-              ) : (
-                <>
-                  {testResults.health && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h3 className="font-semibold text-green-800">✅ Health Check</h3>
-                      <p className="text-sm">Status: {testResults.health.success ? 'Success' : 'Failed'}</p>
-                      <p className="text-sm">Data: {JSON.stringify(testResults.health.data)}</p>
-                    </div>
-                  )}
-
-                  {testResults.menu && (
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h3 className="font-semibold text-blue-800">🍽️ Menu Items</h3>
-                      <p className="text-sm">Status: {testResults.menu.success ? 'Success' : 'Failed'}</p>
-                      <p className="text-sm">Count: {testResults.menu.count} items</p>
-                      {testResults.menu.sample && (
-                        <p className="text-sm">Sample: {testResults.menu.sample.name} - ₹{testResults.menu.sample.price}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {testResults.customer && (
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h3 className="font-semibold text-purple-800">👤 Customer Search</h3>
-                      <p className="text-sm">Status: {testResults.customer.success ? 'Success' : 'Failed'}</p>
-                      <p className="text-sm">Found: {testResults.customer.count} customers</p>
-                      {testResults.customer.sample && (
-                        <p className="text-sm">Sample: {testResults.customer.sample.name} ({testResults.customer.sample.phone}) - {testResults.customer.sample.ordersCount} orders</p>
-                      )}
-                    </div>
-                  )}
-
-                  {testResults.allCustomers && (
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <h3 className="font-semibold text-orange-800">👥 All Customers</h3>
-                      <p className="text-sm">Status: {testResults.allCustomers.success ? 'Success' : 'Failed'}</p>
-                      <p className="text-sm">Total: {testResults.allCustomers.count} customers</p>
-                    </div>
-                  )}
-                </>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Security Verification</label>
+              <div className="flex justify-center">
+                <ReCaptcha
+                  siteKey={RECAPTCHA_SITE_KEY}
+                  onVerify={handleCaptchaVerify}
+                  onExpired={handleCaptchaExpired}
+                  onError={handleCaptchaError}
+                />
+              </div>
+              {captchaVerified && (
+                <p className="text-sm text-green-600 flex items-center">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Verification completed
+                </p>
               )}
             </div>
+
+            <Button 
+              onClick={testRecaptcha}
+              disabled={isLoading || !captchaVerified}
+              className="w-full"
+            >
+              {isLoading ? "Testing..." : "Test reCAPTCHA Verification"}
+            </Button>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
-  );
+  )
 } 

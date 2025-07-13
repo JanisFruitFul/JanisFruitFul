@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 import connectDB from "@/app/lib/mongodb";
 import Customer from "@/backend/models/Customer";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/server-auth";
 
 interface Order {
   isReward: boolean
@@ -24,7 +25,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   ]);
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     if (!process.env.MONGODB_URI) {
       console.warn("MONGODB_URI not set, returning empty rewards data");
@@ -106,6 +107,12 @@ export async function GET(req: Request) {
           error: "Database is currently slow. Please try again in a few moments." 
         }, { status: 503 });
       }
+    }
+
+    // Default: require authentication for admin access to all customers
+    const authResult = await requireAuth(req)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Default: return all customers (original logic)

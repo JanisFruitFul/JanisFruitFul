@@ -77,10 +77,21 @@ export default function CustomerItemsPage() {
   const [menuRef, menuVisible] = useScrollAnimation();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showApologyModal, setShowApologyModal] = useState(false);
 
   useEffect(() => {
     fetchMenuItems();
+    // Check if user has seen the apology modal before
+    const hasSeenApology = localStorage.getItem('hasSeenApologyModal');
+    if (!hasSeenApology) {
+      setShowApologyModal(true);
+    }
   }, []);
+
+  const handleCloseApologyModal = () => {
+    setShowApologyModal(false);
+    localStorage.setItem('hasSeenApologyModal', 'true');
+  };
 
   const fetchMenuItems = async () => {
     try {
@@ -220,6 +231,53 @@ export default function CustomerItemsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Apology Modal */}
+      <Dialog open={showApologyModal} onOpenChange={setShowApologyModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Coffee className="h-6 w-6 text-orange-500" />
+              Important Notice
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              We apologize for any inconvenience
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Coffee className="h-4 w-4 text-orange-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-800 mb-1">Online Ordering Temporarily Unavailable</h3>
+                <p className="text-orange-700 text-sm leading-relaxed">
+                  Sorry, currently the online ordering is not working but you can check the menu. 
+                  Please visit our shop to place your orders and enjoy our delicious drinks!
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={handleCloseApologyModal}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              >
+                Got it, thanks!
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleCloseApologyModal}
+                className="flex-1"
+              >
+                Continue Browsing
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section */}
       <section
         ref={heroRef}

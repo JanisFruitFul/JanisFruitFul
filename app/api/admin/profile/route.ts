@@ -3,14 +3,21 @@ import Admin from "@/backend/models/Admin"
 import Customer from "@/backend/models/Customer"
 import Shop from "@/backend/models/Shop"
 import { type NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/server-auth"
 
 interface Order {
   isReward: boolean
   price: number
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if ('error' in authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     await connectDB()
 
     // Get admin info (assuming single admin for now)
