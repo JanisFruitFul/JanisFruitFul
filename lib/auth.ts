@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken'
 
 // JWT secret - should match the backend
 const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) {
+if (!JWT_SECRET && typeof window === 'undefined') {
   throw new Error('JWT_SECRET environment variable is required')
 }
 
@@ -51,6 +51,16 @@ export const authUtils = {
 
   // Verify token and return user data
   verifyToken: async (token: string): Promise<AuthUser | null> => {
+    if (!JWT_SECRET) {
+      if (typeof window === 'undefined') {
+        // On server, this should never happen due to the check above
+        throw new Error('JWT_SECRET is missing on the server')
+      } else {
+        // On client, JWT_SECRET is not available, so skip verification
+        console.warn('JWT_SECRET is not available on the client. Skipping token verification.')
+        return null
+      }
+    }
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as AuthToken
       
