@@ -7,7 +7,7 @@ export async function GET() {
   try {
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
-      console.warn("MONGODB_URI not set, returning empty array")
+      // MONGODB_URI not set, returning empty array
       return NextResponse.json([])
     }
 
@@ -17,8 +17,11 @@ export async function GET() {
 
     return NextResponse.json(menuItems)
   } catch (error) {
-    console.error("Failed to fetch menu items:", error)
-    return NextResponse.json({ success: false, message: "Failed to fetch menu items" }, { status: 500 })
+    // Failed to fetch menu items
+    return NextResponse.json(
+      { error: "Failed to fetch menu items" },
+      { status: 500 }
+    )
   }
 }
 
@@ -59,7 +62,10 @@ export async function POST(request: NextRequest) {
       menuItem,
     })
   } catch (error) {
-    console.error("Failed to create menu item:", error)
-    return NextResponse.json({ success: false, message: "Failed to create menu item" }, { status: 500 })
+    // Failed to create menu item
+    return NextResponse.json(
+      { error: "Failed to create menu item" },
+      { status: 500 }
+    )
   }
 }

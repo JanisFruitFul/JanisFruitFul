@@ -102,10 +102,20 @@ export default function ShopPage() {
         const uniqueCategories = [...new Set(items.map(item => item.category))]
         setDynamicCategories(uniqueCategories)
       } else {
-        console.error("Failed to fetch menu items")
+        // Failed to fetch menu items
+        toast({
+          title: "Error",
+          description: "Failed to fetch menu items",
+          variant: "destructive",
+        })
       }
     } catch (err) {
-      console.error("Error fetching menu items:", err)
+      // Error fetching menu items
+      toast({
+        title: "Error",
+        description: "Failed to fetch menu items",
+        variant: "destructive",
+      })
     }
   }
 
@@ -186,10 +196,10 @@ export default function ShopPage() {
         throw new Error("Failed to process order")
       }
     } catch (err) {
-      console.error("Error processing order:", err)
+      // Error processing order
       toast({
         title: "Error",
-        description: "Failed to process order. Please try again.",
+        description: "Failed to process order",
         variant: "destructive",
       })
     }
@@ -225,10 +235,11 @@ export default function ShopPage() {
       setCustomerPhone("")
       clearCart()
       setShowCheckout(false)
-    } catch {
+    } catch (err) {
+      // Error processing order
       toast({
         title: "Error",
-        description: "Failed to process order. Please try again.",
+        description: "Failed to process order",
         variant: "destructive",
       })
     } finally {

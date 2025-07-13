@@ -4,7 +4,8 @@ const MONGODB_URI = process.env.MONGODB_URI
 
 // Don't throw error during build time, just return a mock connection
 if (!MONGODB_URI) {
-  console.warn("MONGODB_URI not set - this is expected during build time")
+  // MONGODB_URI not set - this is expected during build time
+  return null
 }
 
 // Extend global type to include mongoose
@@ -24,7 +25,7 @@ if (!cached) {
 async function connectDB() {
   // If no MongoDB URI, return a mock connection for build time
   if (!MONGODB_URI) {
-    console.warn("MongoDB connection skipped - no URI provided")
+    // MongoDB connection skipped - no URI provided
     return null
   }
 

@@ -34,11 +34,10 @@ export async function GET() {
     });
     
   } catch (error) {
-    console.error("Test failed:", error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 });
+    // Test failed
+    return NextResponse.json(
+      { error: "Test failed" },
+      { status: 500 }
+    )
   }
 } 

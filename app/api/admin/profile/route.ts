@@ -68,31 +68,11 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Failed to fetch profile data:", error)
-    // Return real empty state instead of error
-    return NextResponse.json({
-      admin: {
-        name: "Admin User",
-        email: "admin@drinks.com",
-        role: "Super Admin",
-        joinDate: "January 1, 2024",
-        lastLogin: "Today, 2:30 PM",
-      },
-      shop: {
-        name: "",
-        phone: "",
-        email: "",
-        address: "",
-        established: "",
-        license: "",
-      },
-      stats: {
-        totalCustomers: 0,
-        totalOrders: 0,
-        totalRevenue: 0,
-        rewardsGiven: 0,
-      },
-    })
+    // Failed to fetch profile data
+    return NextResponse.json(
+      { error: "Failed to fetch profile data" },
+      { status: 500 }
+    )
   }
 }
 
@@ -111,7 +91,10 @@ export async function PUT(request: NextRequest) {
       user: { username: admin.username, email: admin.email },
     })
   } catch (error) {
-    console.error("Failed to update profile:", error)
-    return NextResponse.json({ success: false, message: "Failed to update profile" }, { status: 500 })
+    // Failed to update profile
+    return NextResponse.json(
+      { error: "Failed to update profile" },
+      { status: 500 }
+    )
   }
 }

@@ -22,11 +22,8 @@ export async function GET(request: NextRequest) {
 
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
-      console.warn("MONGODB_URI not set, returning empty array")
-      return NextResponse.json({ 
-        success: true, 
-        data: [] 
-      })
+      // MONGODB_URI not set, returning empty array
+      return NextResponse.json([])
     }
 
     // Import connectDB dynamically to avoid build issues
@@ -36,8 +33,8 @@ export async function GET(request: NextRequest) {
     const connection = await connectDB();
     
     if (!connection) {
-      console.warn("Database connection failed");
-      throw new Error('Database connection failed');
+      // Database connection failed
+      return NextResponse.json([])
     }
     
     // Get all active menu items and sort by creation date (newest first)
@@ -69,13 +66,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error("Error fetching top sellers:", error);
-    
-    // Return empty data if database fails
-    return NextResponse.json({
-      success: true,
-      data: [],
-      message: "Unable to fetch top sellers at the moment. Please check your database connection."
-    });
+    // Error fetching top sellers
+    return NextResponse.json([])
   }
 } 

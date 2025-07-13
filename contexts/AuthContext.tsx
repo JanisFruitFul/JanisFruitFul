@@ -24,8 +24,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = await authUtils.getCurrentUser()
       setUser(currentUser)
     } catch (error) {
-      console.error('Auth check failed:', error)
+      // Auth check failed
       setUser(null)
+      setIsLoading(false)
     } finally {
       setIsLoading(false)
     }

@@ -63,11 +63,11 @@ export function ReCaptcha({ siteKey, onVerify, onExpired, onError }: ReCaptchaPr
         })
         isRenderedRef.current = true
       } catch (error) {
-        console.error('Error rendering reCAPTCHA:', error)
-        handleError()
+        // Error rendering reCAPTCHA
+        onError?.()
       }
     }
-  }, [siteKey, handleVerify, handleExpired, handleError])
+  }, [siteKey, handleVerify, handleExpired, handleError, onError])
 
   useEffect(() => {
     const loadRecaptcha = () => {
@@ -98,22 +98,23 @@ export function ReCaptcha({ siteKey, onVerify, onExpired, onError }: ReCaptchaPr
       try {
         window.grecaptcha.reset(widgetIdRef.current)
       } catch (error) {
-        console.error('Error resetting reCAPTCHA:', error)
+        // Error resetting reCAPTCHA
+        onError?.()
       }
     }
-  }, [])
+  }, [onError])
 
   const getResponse = useCallback(() => {
     if (widgetIdRef.current !== null && typeof window !== 'undefined' && window.grecaptcha) {
       try {
         return window.grecaptcha.getResponse(widgetIdRef.current)
       } catch (error) {
-        console.error('Error getting reCAPTCHA response:', error)
-        return ''
+        // Error getting reCAPTCHA response
+        onError?.()
       }
     }
     return ''
-  }, [])
+  }, [onError])
 
   // Expose methods to parent component
   useEffect(() => {

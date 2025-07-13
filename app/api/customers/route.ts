@@ -18,7 +18,7 @@ export async function GET(
   try {
     // Check if MongoDB URI is available
     if (!process.env.MONGODB_URI) {
-      console.warn("MONGODB_URI not set, returning empty array")
+      // MONGODB_URI not set, returning empty array
       return NextResponse.json([])
     }
 
@@ -73,7 +73,10 @@ export async function GET(
 
     return NextResponse.json(customers)
   } catch (error) {
-    console.error("Failed to fetch customers:", error)
-    return NextResponse.json({ success: false, message: "Failed to fetch customers" }, { status: 500 })
+    // Failed to fetch customers
+    return NextResponse.json(
+      { error: "Failed to fetch customers" },
+      { status: 500 }
+    )
   }
 }

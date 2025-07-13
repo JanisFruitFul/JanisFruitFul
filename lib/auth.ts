@@ -13,7 +13,10 @@ export interface AuthToken {
 import jwt from 'jsonwebtoken'
 
 // JWT secret - should match the backend
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_here'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 
 // Token management
 export const authUtils = {
@@ -58,7 +61,7 @@ export const authUtils = {
       
       return decoded.user
     } catch (error) {
-      console.error('Token verification failed:', error)
+      // Token verification failed
       return null
     }
   },

@@ -63,8 +63,8 @@ async function migrateCategories() {
         }
         
       } catch (error) {
-        console.error(`❌ Failed to migrate customer ${customer.name}:`, error.message);
-        skippedCount++;
+        // Failed to migrate customer
+        continue
       }
     }
 
@@ -81,7 +81,8 @@ async function migrateCategories() {
     });
 
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    // Migration failed
+    process.exit(1)
   } finally {
     await mongoose.disconnect();
 

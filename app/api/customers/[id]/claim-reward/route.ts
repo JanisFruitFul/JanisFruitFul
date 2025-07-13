@@ -59,9 +59,9 @@ export async function POST(
       claimedCategory: category,
     })
   } catch (error) {
-    console.error("Error claiming reward:", error)
+    // Error claiming reward
     return NextResponse.json(
-      { success: false, message: "Failed to claim reward" },
+      { error: "Failed to claim reward" },
       { status: 500 }
     )
   }

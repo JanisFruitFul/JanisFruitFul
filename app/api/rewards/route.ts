@@ -28,16 +28,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 export async function GET(req: NextRequest) {
   try {
     if (!process.env.MONGODB_URI) {
-      console.warn("MONGODB_URI not set, returning empty rewards data");
-      return NextResponse.json({
-        customers: [],
-        stats: {
-          totalRewardsGiven: 0,
-          customersWithRewards: 0,
-          upcomingRewards: 0,
-          readyRewards: 0,
-        },
-      });
+      // MONGODB_URI not set, returning empty rewards data
+      return NextResponse.json({ customers: [] })
     }
 
     // Support filtering by mobile number
@@ -102,10 +94,11 @@ export async function GET(req: NextRequest) {
           },
         });
       } catch (timeoutError) {
-        console.error("Database timeout, returning error:", timeoutError);
-        return NextResponse.json({ 
-          error: "Database is currently slow. Please try again in a few moments." 
-        }, { status: 503 });
+        // Database timeout, returning error
+        return NextResponse.json(
+          { error: "Database connection timeout" },
+          { status: 500 }
+        )
       }
     }
 
@@ -198,13 +191,17 @@ export async function GET(req: NextRequest) {
         },
       })
     } catch (timeoutError) {
-      console.error("Database timeout, returning error:", timeoutError);
-      return NextResponse.json({ 
-        error: "Database is currently slow. Please try again in a few moments." 
-      }, { status: 503 });
+      // Database timeout, returning error
+      return NextResponse.json(
+        { error: "Database connection timeout" },
+        { status: 500 }
+      )
     }
   } catch (error) {
-    console.error("Failed to fetch reward data:", error)
-    return NextResponse.json({ success: false, message: "Failed to fetch reward data" }, { status: 500 })
+    // Failed to fetch reward data
+    return NextResponse.json(
+      { error: "Failed to fetch reward data" },
+      { status: 500 }
+    )
   }
 }

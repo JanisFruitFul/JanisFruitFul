@@ -55,14 +55,10 @@ export async function GET(request: NextRequest) {
       recentCustomers,
     })
   } catch (error) {
-    console.error("Failed to fetch dashboard stats:", error)
-    // Return real empty state instead of error
-    return NextResponse.json({
-      totalCustomers: 0,
-      totalDrinksSold: 0,
-      upcomingRewards: 0,
-      rewardsEarned: 0,
-      recentCustomers: [],
-    })
+    // Failed to fetch dashboard stats
+    return NextResponse.json(
+      { error: "Failed to fetch dashboard stats" },
+      { status: 500 }
+    )
   }
 }

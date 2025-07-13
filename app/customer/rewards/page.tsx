@@ -25,6 +25,7 @@ import {
 import { useEffect, useState } from "react";
 import { CustomerProgressModalForCustomers } from "@/components/customer-progress-modal-for-customers";
 import Link from "next/link";
+import { toast } from "@/components/ui/use-toast";
 
 interface CategoryReward {
   category: string;
@@ -101,16 +102,18 @@ export default function RewardsPage() {
       
       // Check if data has the expected structure
       if (!data || !data.customers || !Array.isArray(data.customers)) {
-        console.error('❌ Invalid data structure:', data);
-        throw new Error('Invalid data structure received from server');
+        // Invalid data structure
+        return
       }
   
       setRewardCustomers(data.customers);
     } catch (error) {
-      console.error("❌ Failed to fetch reward data:", error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch reward data');
-      setRewardCustomers([]);
-      setFilteredCustomers([]);
+      // Failed to fetch reward data
+      toast({
+        title: "Error",
+        description: "Failed to fetch reward data",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false);
     }

@@ -219,17 +219,10 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("Failed to fetch earnings data:", error)
-    return NextResponse.json({
-      totalEarnings: 0,
-      totalOrders: 0,
-      averageOrderValue: 0,
-      topCustomers: [],
-      topDrinks: [],
-      monthlyEarnings: [],
-      dailyEarnings: [],
-      yearlyEarnings: [],
-      transactions: []
-    })
+    // Failed to fetch earnings data
+    return NextResponse.json(
+      { error: "Failed to fetch earnings data" },
+      { status: 500 }
+    )
   }
 } 

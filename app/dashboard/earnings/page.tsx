@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Line, LineChart } from "recharts";
+import { toast } from "@/components/ui/use-toast";
 
 interface EarningsData {
   totalEarnings: number;
@@ -120,8 +121,12 @@ export default function EarningsPage() {
       
 
     } catch (error) {
-      console.error("Failed to fetch earnings data:", error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch earnings data');
+      // Failed to fetch earnings data
+      toast({
+        title: "Error",
+        description: "Failed to fetch earnings data",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false);
     }

@@ -32,6 +32,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 interface DashboardStats {
   totalCustomers: number
@@ -156,14 +157,11 @@ export default function DashboardPage() {
       
       setStats(processedData)
     } catch (error) {
-      console.error("Failed to fetch dashboard stats:", error)
-      // Show real empty state instead of fallback data
-      setStats({
-        totalCustomers: 0,
-        totalDrinksSold: 0,
-        totalRevenue: 0,
-        rewardsEarned: 0,
-        recentCustomers: []
+      // Failed to fetch dashboard stats
+      toast({
+        title: "Error",
+        description: "Failed to fetch dashboard stats",
+        variant: "destructive",
       })
     }
   }
@@ -177,8 +175,12 @@ export default function DashboardPage() {
       const data = await response.json()
       setProfileData(data)
     } catch (error) {
-      console.error("Failed to fetch profile data:", error)
-      // Don't set any fallback data - let it remain null
+      // Failed to fetch profile data
+      toast({
+        title: "Error",
+        description: "Failed to fetch profile data",
+        variant: "destructive",
+      })
     }
   }
 
@@ -194,9 +196,12 @@ export default function DashboardPage() {
       const chartData = data.dailyEarnings || []
       setDailyChartData(chartData)
     } catch (error) {
-      console.error("Failed to fetch chart data:", error)
-      // Don't set fallback data - show empty state instead
-      setDailyChartData([])
+      // Failed to fetch chart data
+      toast({
+        title: "Error",
+        description: "Failed to fetch chart data",
+        variant: "destructive",
+      })
     }
   }
 
@@ -212,17 +217,12 @@ export default function DashboardPage() {
       const data = await response.json();
       setDailyEarnings(data.dailyEarnings || []);
     } catch (error) {
-      console.error("Failed to fetch daily earnings:", error);
-      // Set default sample data if API fails
-      setDailyEarnings([
-        { date: "2024-01-15", earnings: 2500, orders: 12 },
-        { date: "2024-01-16", earnings: 3200, orders: 15 },
-        { date: "2024-01-17", earnings: 1800, orders: 8 },
-        { date: "2024-01-18", earnings: 4100, orders: 20 },
-        { date: "2024-01-19", earnings: 2900, orders: 14 },
-        { date: "2024-01-20", earnings: 3600, orders: 18 },
-        { date: "2024-01-21", earnings: 2200, orders: 11 },
-      ]);
+      // Failed to fetch daily earnings
+      toast({
+        title: "Error",
+        description: "Failed to fetch daily earnings",
+        variant: "destructive",
+      })
     } finally {
       setCalendarLoading(false);
     }

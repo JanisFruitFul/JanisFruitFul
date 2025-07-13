@@ -8,16 +8,25 @@ const port = parseInt(process.env.PORT, 10) || 5001;
 
 // CORS configuration
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://janis-fruitful.vercel.app', // Your specific Vercel domain
-    'https://janis-fruitful-git-main-janis-fruitful.vercel.app', // Preview deployments
-    'https://janis-fruitful-git-develop-janis-fruitful.vercel.app', // Other possible preview URLs
-    'https://*.vercel.app', // Allow all Vercel preview deployments
-    'https://*.onrender.com', // Allow Render deployments
-    process.env.FRONTEND_URL // Allow custom frontend URL from environment
-  ].filter(Boolean),
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'https://janis-fruitful.vercel.app', // Your specific Vercel domain
+        'https://janis-fruitful-git-main-janis-fruitful.vercel.app', // Preview deployments
+        'https://janis-fruitful-git-develop-janis-fruitful.vercel.app', // Other possible preview URLs
+        'https://*.vercel.app', // Allow all Vercel preview deployments
+        'https://*.onrender.com', // Allow Render deployments
+        process.env.FRONTEND_URL // Allow custom frontend URL from environment
+      ].filter(Boolean)
+    : [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://janis-fruitful.vercel.app',
+        'https://janis-fruitful-git-main-janis-fruitful.vercel.app',
+        'https://janis-fruitful-git-develop-janis-fruitful.vercel.app',
+        'https://*.vercel.app',
+        'https://*.onrender.com',
+        process.env.FRONTEND_URL
+      ].filter(Boolean),
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -103,7 +112,7 @@ app.post('/api/admin/login', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error("Login error:", error);
+    // Login error
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -160,7 +169,7 @@ app.get('/api/admin/profile', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Failed to fetch profile data:", error);
+    // Failed to fetch profile data
     res.status(500).json({ success: false, message: "Failed to fetch profile data" });
   }
 });
@@ -172,7 +181,7 @@ app.get('/api/menu', async (req, res) => {
     const menuItems = await MenuItem.find({ isActive: true }).sort({ createdAt: -1 });
     res.json(menuItems);
   } catch (error) {
-    console.error("Error fetching menu:", error);
+    // Error fetching menu
     res.status(500).json({ error: "Failed to fetch menu items" });
   }
 });
@@ -184,7 +193,7 @@ app.get('/api/menu-items', async (req, res) => {
     const menuItems = await MenuItem.find({}).sort({ createdAt: -1 });
     res.json(menuItems);
   } catch (error) {
-    console.error("Error fetching menu items:", error);
+    // Error fetching menu items
     res.status(500).json({ error: "Failed to fetch menu items" });
   }
 });
@@ -217,7 +226,7 @@ app.post('/api/menu-items', upload.single('image'), async (req, res) => {
 
         imageUrl = uploadResult.secure_url;
       } catch (uploadError) {
-        console.error('Cloudinary upload error:', uploadError);
+        // Cloudinary upload error
         // Continue with placeholder image if upload fails
       }
     }
@@ -239,7 +248,7 @@ app.post('/api/menu-items', upload.single('image'), async (req, res) => {
       menuItem,
     });
   } catch (error) {
-    console.error("Failed to create menu item:", error);
+    // Failed to create menu item
     res.status(500).json({ success: false, message: "Failed to create menu item" });
   }
 });
@@ -279,7 +288,7 @@ app.put('/api/menu-items/:id', upload.single('image'), async (req, res) => {
 
         imageUrl = uploadResult.secure_url;
       } catch (uploadError) {
-        console.error('Cloudinary upload error:', uploadError);
+        // Cloudinary upload error
         // Keep existing image if upload fails
       }
     }
@@ -300,7 +309,7 @@ app.put('/api/menu-items/:id', upload.single('image'), async (req, res) => {
       menuItem,
     });
   } catch (error) {
-    console.error("Failed to update menu item:", error);
+    // Failed to update menu item
     res.status(500).json({ success: false, message: "Failed to update menu item" });
   }
 });
@@ -328,7 +337,7 @@ app.patch('/api/menu-items/:id/toggle', async (req, res) => {
       menuItem,
     });
   } catch (error) {
-    console.error("Failed to toggle menu item:", error);
+    // Failed to toggle menu item
     res.status(500).json({ success: false, message: "Failed to toggle menu item" });
   }
 });
@@ -352,7 +361,7 @@ app.delete('/api/menu-items/:id', async (req, res) => {
       message: "Menu item deleted successfully",
     });
   } catch (error) {
-    console.error("Failed to delete menu item:", error);
+    // Failed to delete menu item
     res.status(500).json({ success: false, message: "Failed to delete menu item" });
   }
 });
@@ -364,7 +373,7 @@ app.get('/api/customers', async (req, res) => {
     const customers = await Customer.find().sort({ createdAt: -1 });
     res.json(customers);
   } catch (error) {
-    console.error("Error fetching customers:", error);
+    // Error fetching customers
     res.status(500).json({ error: "Failed to fetch customers" });
   }
 });
@@ -434,7 +443,7 @@ app.post('/api/customers/purchase', async (req, res) => {
       isReward: !!isReward
     });
   } catch (error) {
-    console.error("Error recording purchase:", error);
+    // Error recording purchase
     res.status(500).json({ error: "Failed to record purchase" });
   }
 });
@@ -498,7 +507,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
       recentCustomers: processedRecentCustomers
     });
   } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
+    // Error fetching dashboard stats
     res.status(500).json({ error: "Failed to fetch dashboard stats" });
   }
 });
@@ -723,7 +732,7 @@ app.get('/api/earnings', async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Error fetching earnings data:", error);
+    // Error fetching earnings data
     res.status(500).json({ error: "Failed to fetch earnings data" });
   }
 });
@@ -809,7 +818,7 @@ app.get('/api/rewards', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching rewards:", error);
+    // Error fetching rewards
     res.status(500).json({ error: "Failed to fetch rewards data" });
   }
 });
@@ -823,8 +832,8 @@ async function startServer() {
       // Server started successfully
     });
   } catch (err) {
-    console.error('❌ Server startup failed:', err.message);
-    console.error('💡 Make sure your MongoDB URI is correct and the database is accessible');
+    // Server startup failed
+    // Make sure your MongoDB URI is correct and the database is accessible
     process.exit(1);
   }
 }
@@ -878,7 +887,7 @@ app.post('/api/customers/:id/claim-reward', async (req, res) => {
       claimedCategory: category
     });
   } catch (error) {
-    console.error("Error claiming reward:", error);
+    // Error claiming reward
     res.status(500).json({ success: false, message: "Failed to claim reward" });
   }
 });
@@ -909,8 +918,8 @@ app.get('/api/customers/:id/drinks/:category', async (req, res) => {
       rewardOrders: categoryOrders.filter(order => order.isReward).length,
     });
   } catch (error) {
-    console.error("Error fetching customer drinks:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch customer drinks" });
+    // Error fetching customer drinks
+    res.status(500).json({ error: "Failed to fetch customer drinks" });
   }
 });
 

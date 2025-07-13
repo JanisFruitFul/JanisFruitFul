@@ -78,7 +78,10 @@ export async function POST(request: NextRequest) {
       isReward: !!isReward,
     })
   } catch (error) {
-    console.error("Purchase error:", error)
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
+    // Purchase error
+    return NextResponse.json(
+      { error: "Failed to process purchase" },
+      { status: 500 }
+    )
   }
 }

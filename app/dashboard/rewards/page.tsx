@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CustomerProgressModal } from "@/components/customer-progress-modal";
+import { toast } from "@/components/ui/use-toast";
 
 interface CategoryReward {
   category: string;
@@ -77,8 +78,8 @@ export default function RewardsPage() {
       
       // Check if data has the expected structure
       if (!data || !data.customers || !Array.isArray(data.customers)) {
-        console.error('❌ Invalid data structure:', data);
-        throw new Error('Invalid data structure received from server');
+        // Invalid data structure
+        return
       }
   
       setRewardCustomers(data.customers);
@@ -89,15 +90,12 @@ export default function RewardsPage() {
         readyRewards: 0,
       });
     } catch (error) {
-      console.error("❌ Failed to fetch reward data:", error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch reward data');
-      setRewardCustomers([]);
-      setStats({
-        totalRewardsGiven: 0,
-        customersWithRewards: 0,
-        upcomingRewards: 0,
-        readyRewards: 0,
-      });
+      // Failed to fetch reward data
+      toast({
+        title: "Error",
+        description: "Failed to fetch reward data",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false);
     }
@@ -131,16 +129,24 @@ See you at Jani's Fruitful! 😊`;
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('❌ Claim reward failed:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        // Claim reward failed
+        toast({
+          title: "Error",
+          description: "Failed to claim reward",
+          variant: "destructive",
+        })
+        return
       }
 
       // Refresh the rewards data
       await fetchRewards();
     } catch (error) {
-      console.error('❌ Error claiming reward:', error);
-      alert(`Failed to claim reward: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Error claiming reward
+      toast({
+        title: "Error",
+        description: "Failed to claim reward",
+        variant: "destructive",
+      })
     }
   };
 

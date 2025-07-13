@@ -91,14 +91,10 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(chartData)
   } catch (error) {
-    console.error("Failed to fetch chart data:", error)
-    // Return sample data if database connection fails
-    const sampleData = [
-      { date: 'Dec 18', orders: 5, earnings: 250 },
-      { date: 'Dec 19', orders: 8, earnings: 400 },
-      { date: 'Dec 20', orders: 3, earnings: 150 },
-      { date: 'Dec 21', orders: 7, earnings: 350 }
-    ]
-    return NextResponse.json(sampleData)
+    // Failed to fetch chart data
+    return NextResponse.json(
+      { error: "Failed to fetch chart data" },
+      { status: 500 }
+    )
   }
 } 

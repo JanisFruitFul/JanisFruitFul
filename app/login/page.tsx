@@ -29,7 +29,10 @@ export default function LoginPage() {
   const { toast } = useToast()
   const { login } = useAuth()
 
-  const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LdmaIErAAAAAMmVu3WBz-OTBkfMvfH9Syplu3Sm"
+  const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+  if (!RECAPTCHA_SITE_KEY) {
+    throw new Error('NEXT_PUBLIC_RECAPTCHA_SITE_KEY environment variable is required')
+  }
 
   // Check if reCAPTCHA is loaded
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function LoginPage() {
       try {
         recaptchaElement.reset()
       } catch (error) {
-        console.error('Error resetting reCAPTCHA:', error)
+        // Error resetting reCAPTCHA
       }
     }
     setCaptchaToken("")
@@ -160,29 +163,12 @@ export default function LoginPage() {
         resetCaptcha()
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
-      
-      let errorMessage = "Something went wrong. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          errorMessage = "Cannot connect to backend server. Please check your internet connection and try again.";
-        } else if (error.message.includes('Backend server error')) {
-          errorMessage = error.message;
-        } else if (error.message.includes('CORS error')) {
-          errorMessage = error.message;
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
+      // Login error
       toast({
-        title: "Connection Error",
-        description: errorMessage,
+        title: "Login Failed",
+        description: "Invalid credentials or server error",
         variant: "destructive",
       })
-      // Reset captcha on error
-      resetCaptcha()
     } finally {
       setIsLoading(false)
     }

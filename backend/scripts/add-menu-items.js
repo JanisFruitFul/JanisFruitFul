@@ -90,7 +90,8 @@ async function addMenuItems() {
 
 
   } catch (error) {
-    console.error('❌ Failed to add menu items:', error);
+    // Failed to add menu items
+    process.exit(1)
   } finally {
     await mongoose.disconnect();
 

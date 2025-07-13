@@ -90,11 +90,11 @@ export async function PUT(
           throw new Error("Failed to get secure URL from Cloudinary");
         }
       } catch (uploadError) {
-        console.error("Cloudinary upload error:", uploadError);
+        // Cloudinary upload error
         return NextResponse.json(
-          { error: "Failed to upload image to Cloudinary" },
+          { error: "Failed to upload image" },
           { status: 500 }
-        );
+        )
       }
     }
 
@@ -115,9 +115,9 @@ export async function PUT(
     
     return NextResponse.json(updatedItem);
   } catch (error) {
-    console.error("Error updating menu item:", error);
+    // Error updating menu item
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update menu item" },
+      { error: "Failed to update menu item" },
       { status: 500 }
     );
   }
@@ -148,9 +148,9 @@ export async function DELETE(
     
     return NextResponse.json({ message: "Menu item deleted successfully" });
   } catch (error) {
-    console.error("Error deleting menu item:", error);
+    // Error deleting menu item
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete menu item" },
+      { error: "Failed to delete menu item" },
       { status: 500 }
     );
   }
@@ -195,9 +195,9 @@ export async function PATCH(
     
     return NextResponse.json(updatedItem);
   } catch (error) {
-    console.error("Error updating menu item availability:", error);
+    // Error updating menu item availability
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update menu item availability" },
+      { error: "Failed to update menu item availability" },
       { status: 500 }
     );
   }

@@ -58,7 +58,12 @@ export function AddPurchaseDialog({ open, onOpenChange, selectedItem, onSuccess 
       const data = await response.json()
       setMenuItems(data)
     } catch (error) {
-      console.error("Failed to fetch menu items:", error)
+      // Failed to fetch menu items
+      toast({
+        title: "Error",
+        description: "Failed to fetch menu items",
+        variant: "destructive",
+      })
     }
   }
 

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getApiUrl } from "@/lib/config"
 import { Building2, Calendar, Clock, Mail, MapPin, Phone, Shield, User } from "lucide-react"
 import { useEffect, useState } from "react"
+import { toast } from "@/components/ui/use-toast"
 
 interface ProfileData {
   admin: {
@@ -44,7 +45,12 @@ export default function ProfilePage() {
       const data = await response.json()
       setProfileData(data)
     } catch (error) {
-      console.error("Failed to fetch profile data:", error)
+      // Failed to fetch profile data
+      toast({
+        title: "Error",
+        description: "Failed to fetch profile data",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }

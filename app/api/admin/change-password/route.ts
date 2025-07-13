@@ -50,7 +50,10 @@ export async function PUT(request: NextRequest) {
       message: "Password changed successfully",
     })
   } catch (error) {
-    console.error("Failed to change password:", error)
-    return NextResponse.json({ success: false, message: "Failed to change password" }, { status: 500 })
+    // Failed to change password
+    return NextResponse.json(
+      { error: "Failed to change password" },
+      { status: 500 }
+    )
   }
 }

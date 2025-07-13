@@ -12,7 +12,8 @@ const uploadImage = async () => {
 
 
   } catch (err) {
-    console.error("Upload failed:", err);
+    // Upload failed
+    throw new Error("Image upload failed")
   }
 };
 

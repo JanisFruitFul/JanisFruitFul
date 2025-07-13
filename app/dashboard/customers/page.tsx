@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getApiUrl } from "@/lib/config";
 import { Calendar, ChevronRight, Gift, IndianRupee, MessageCircle, Search, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 interface Customer {
   _id: string
@@ -70,8 +71,12 @@ export default function CustomersPage() {
       // Ensure data is an array
       setCustomers(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error("Failed to fetch customers:", error)
-      setCustomers([]) // Set empty array on error
+      // Failed to fetch customers
+      toast({
+        title: "Error",
+        description: "Failed to fetch customers",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }

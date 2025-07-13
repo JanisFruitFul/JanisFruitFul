@@ -4,8 +4,16 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { type NextRequest, NextResponse } from "next/server"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_super_secret_jwt_key_here"
-const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || "6LdmaIErAAAAAFczCJQlafDRyfIOAnfWoi_fd7Ov"
+const JWT_SECRET = process.env.JWT_SECRET
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
+
+if (!RECAPTCHA_SECRET_KEY) {
+  throw new Error('RECAPTCHA_SECRET_KEY environment variable is required')
+}
 
 // Function to verify reCAPTCHA token
 async function verifyRecaptcha(token: string): Promise<boolean> {
@@ -21,7 +29,6 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
     const data = await response.json()
     return data.success === true
   } catch (error) {
-    console.error('reCAPTCHA verification error:', error)
     return false
   }
 }
@@ -43,7 +50,10 @@ export async function POST(request: NextRequest) {
 
     const isCaptchaValid = await verifyRecaptcha(captchaToken)
     if (!isCaptchaValid) {
-      return NextResponse.json({ success: false, message: "reCAPTCHA verification failed" }, { status: 400 })
+      return NextResponse.json(
+        { error: "reCAPTCHA verification failed" },
+        { status: 400 }
+      )
     }
 
     // Find admin by email
@@ -65,13 +75,7 @@ export async function POST(request: NextRequest) {
     await admin.save()
 
     // Generate JWT token with the structure expected by the frontend
-    const token = jwt.sign({ 
-      user: {
-        id: admin._id.toString(),
-        email: admin.email,
-        role: admin.role || 'admin'
-      }
-    }, JWT_SECRET, { expiresIn: "7d" })
+    const token = jwt.sign({ adminId: admin._id, email: admin.email }, JWT_SECRET!, { expiresIn: "7d" });
 
     const response = NextResponse.json({
       success: true,
@@ -87,7 +91,10 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error("Login error:", error)
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
+    // Login error
+    return NextResponse.json(
+      { error: "Login failed" },
+      { status: 500 }
+    )
   }
 }

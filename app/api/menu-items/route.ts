@@ -101,33 +101,11 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json(menuItem, { status: 201 });
   } catch (error) {
-    console.error("Error creating menu item:", error);
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-    
-    // Handle MongoDB duplicate key errors
-    if (error instanceof Error && error.message.includes('duplicate key')) {
-      return NextResponse.json(
-        { success: false, message: "An item with this name already exists" },
-        { status: 409 }
-      );
-    }
-    
-    // Handle validation errors
-    if (error instanceof Error && error.message.includes('validation failed')) {
-      return NextResponse.json(
-        { success: false, message: "Validation failed: " + error.message },
-        { status: 400 }
-      );
-    }
-    
+    // Error creating menu item
     return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to create menu item",
-        error: error instanceof Error ? error.message : "Unknown error"
-      },
+      { error: "Failed to create menu item" },
       { status: 500 }
-    );
+    )
   }
 }
 
@@ -138,10 +116,10 @@ export async function GET() {
     
     return NextResponse.json(menuItems);
   } catch (error) {
-    console.error("Error fetching menu items:", error);
+    // Error fetching menu items
     return NextResponse.json(
       { error: "Failed to fetch menu items" },
       { status: 500 }
-    );
+    )
   }
 } 

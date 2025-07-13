@@ -31,6 +31,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import Image from "next/image";
+import { toast } from "@/components/ui/use-toast";
 // Animation hook for scroll-triggered animations
 const useScrollAnimation = (threshold: number = 0.1) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -104,11 +105,21 @@ export default function CustomerItemsPage() {
         
         setMenuItems(data);
       } else {
-        console.error("Failed to fetch menu items");
+        // Failed to fetch menu items
+        toast({
+          title: "Error",
+          description: "Failed to fetch menu items",
+          variant: "destructive",
+        })
         setMenuItems([]);
       }
     } catch (err) {
-      console.error("Error fetching menu items:", err);
+      // Error fetching menu items
+      toast({
+        title: "Error",
+        description: "Failed to fetch menu items",
+        variant: "destructive",
+      })
       setMenuItems([]);
     } finally {
       setLoading(false);

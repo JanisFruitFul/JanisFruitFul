@@ -38,9 +38,9 @@ export async function GET(
       rewardOrders: categoryOrders.filter((order: Order) => order.isReward).length,
     })
   } catch (error) {
-    console.error("Error fetching customer drinks:", error)
+    // Error fetching customer drinks
     return NextResponse.json(
-      { success: false, message: "Failed to fetch customer drinks" },
+      { error: "Failed to fetch customer drinks" },
       { status: 500 }
     )
   }
