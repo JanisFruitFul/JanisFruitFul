@@ -120,7 +120,7 @@ export default function EarningsPage() {
       setEarningsData(data);
       
 
-    } catch (error) {
+    } catch {
       // Failed to fetch earnings data
       toast({
         title: "Error",

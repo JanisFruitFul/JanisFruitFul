@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { getApiUrl } from "@/lib/config"
 import { ShoppingCart } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 interface MenuItem {
   _id: string
@@ -39,6 +39,21 @@ export function AddPurchaseDialog({ open, onOpenChange, selectedItem, onSuccess 
 
   const drinkTypes = ["Mojito", "Ice Cream", "Milkshake", "Waffle", "Juice", "Fruit Plate", "Lassi"]
 
+  const fetchMenuItems = useCallback(async () => {
+    try {
+      const response = await fetch(getApiUrl('api/menu'))
+      const data = await response.json()
+      setMenuItems(data)
+    } catch {
+      // Failed to fetch menu items
+      toast({
+        title: "Error",
+        description: "Failed to fetch menu items",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
   useEffect(() => {
     if (selectedItem) {
       setDrinkType(selectedItem.category)
@@ -50,22 +65,7 @@ export function AddPurchaseDialog({ open, onOpenChange, selectedItem, onSuccess 
     if (open) {
       fetchMenuItems()
     }
-  }, [open])
-
-  const fetchMenuItems = async () => {
-    try {
-      const response = await fetch(getApiUrl('api/menu'))
-      const data = await response.json()
-      setMenuItems(data)
-    } catch (error) {
-      // Failed to fetch menu items
-      toast({
-        title: "Error",
-        description: "Failed to fetch menu items",
-        variant: "destructive",
-      })
-    }
-  }
+  }, [open, fetchMenuItems])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

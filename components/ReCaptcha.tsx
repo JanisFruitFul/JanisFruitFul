@@ -62,7 +62,7 @@ export function ReCaptcha({ siteKey, onVerify, onExpired, onError }: ReCaptchaPr
           size: 'normal',
         })
         isRenderedRef.current = true
-      } catch (error) {
+      } catch {
         // Error rendering reCAPTCHA
         onError?.()
       }
@@ -97,7 +97,7 @@ export function ReCaptcha({ siteKey, onVerify, onExpired, onError }: ReCaptchaPr
     if (widgetIdRef.current !== null && typeof window !== 'undefined' && window.grecaptcha) {
       try {
         window.grecaptcha.reset(widgetIdRef.current)
-      } catch (error) {
+      } catch {
         // Error resetting reCAPTCHA
         onError?.()
       }
@@ -108,7 +108,7 @@ export function ReCaptcha({ siteKey, onVerify, onExpired, onError }: ReCaptchaPr
     if (widgetIdRef.current !== null && typeof window !== 'undefined' && window.grecaptcha) {
       try {
         return window.grecaptcha.getResponse(widgetIdRef.current)
-      } catch (error) {
+      } catch {
         // Error getting reCAPTCHA response
         onError?.()
       }

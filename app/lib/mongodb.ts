@@ -2,26 +2,17 @@ import mongoose from "mongoose"
 
 const MONGODB_URI = process.env.MONGODB_URI
 
-// Don't throw error during build time, just return a mock connection
-if (!MONGODB_URI) {
-  // MONGODB_URI not set - this is expected during build time
-  return null
+// Use a unique symbol to avoid type conflicts on global
+const MONGOOSE_CACHE = Symbol.for('mongoose.cache');
+
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
 }
 
-// Extend global type to include mongoose
-declare global {
-  // eslint-disable-next-line no-var
-  var mongoose: {
-    conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
-  } | undefined;
-}
-
-let cached = global.mongoose
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
-}
+const globalWithCache = global as typeof global & Record<symbol, MongooseCache>;
+const cached: MongooseCache = globalWithCache[MONGOOSE_CACHE] || { conn: null, promise: null };
+globalWithCache[MONGOOSE_CACHE] = cached;
 
 async function connectDB() {
   // If no MongoDB URI, return a mock connection for build time
@@ -46,18 +37,20 @@ async function connectDB() {
       heartbeatFrequencyMS: 10000,
     }
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
       return mongoose
-    }).catch((error) => {
+    }).catch(() => {
       // MongoDB connection error
-      return null
+      // Instead of returning null, throw to be caught below
+      throw new Error('MongoDB connection error')
     })
   }
 
   try {
     cached!.conn = await cached!.promise
-  } catch (e) {
+  } catch {
     // Failed to establish MongoDB connection
+    cached!.conn = null
     return null
   }
 

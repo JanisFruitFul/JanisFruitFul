@@ -44,7 +44,7 @@ export default function ProfilePage() {
       const response = await fetch(getApiUrl('api/admin/profile'))
       const data = await response.json()
       setProfileData(data)
-    } catch (error) {
+    } catch {
       // Failed to fetch profile data
       toast({
         title: "Error",

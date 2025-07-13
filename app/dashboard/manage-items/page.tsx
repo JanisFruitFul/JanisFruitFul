@@ -154,7 +154,7 @@ export default function ManageItemsPage() {
       // Extract unique categories from menu items
       const uniqueCategories = [...new Set(items.map(item => item.category))];
       setDynamicCategories(uniqueCategories);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch menu items");
     } finally {
       setIsLoading(false);
@@ -196,7 +196,7 @@ export default function ManageItemsPage() {
 
       toast.success(`Item ${item.isActive ? "made unavailable" : "made available"}`);
       fetchMenuItems(); // Refresh the list
-    } catch (error) {
+    } catch {
       toast.error("Failed to update item");
     }
   };
@@ -228,7 +228,7 @@ export default function ManageItemsPage() {
       setShowEditDialog(false);
       setEditingItem(null);
       fetchMenuItems(); // Refresh the list
-    } catch (error) {
+    } catch {
       toast.error("Failed to update item");
     }
   };
@@ -249,7 +249,7 @@ export default function ManageItemsPage() {
       setShowDeleteDialog(false);
       setDeletingItem(null);
       fetchMenuItems(); // Refresh the list
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete item");
     }
   };
@@ -351,8 +351,8 @@ export default function ManageItemsPage() {
       
       // Refresh the list
       fetchMenuItems();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add menu item");
+    } catch {
+      toast.error("Failed to add menu item");
     } finally {
       setIsAddingItem(false);
     }

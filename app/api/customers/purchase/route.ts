@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       customer,
       isReward: !!isReward,
     })
-  } catch (error) {
+  } catch {
     // Purchase error
     return NextResponse.json(
       { error: "Failed to process purchase" },

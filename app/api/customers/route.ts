@@ -72,7 +72,7 @@ export async function GET(
     const customers = await Customer.find({}).populate("orders.itemId", "name category price").sort({ updatedAt: -1 })
 
     return NextResponse.json(customers)
-  } catch (error) {
+  } catch {
     // Failed to fetch customers
     return NextResponse.json(
       { error: "Failed to fetch customers" },

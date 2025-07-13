@@ -107,7 +107,7 @@ export default function RewardsPage() {
       }
   
       setRewardCustomers(data.customers);
-    } catch (error) {
+    } catch {
       // Failed to fetch reward data
       toast({
         title: "Error",

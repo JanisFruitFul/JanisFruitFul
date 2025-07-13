@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest) {
       success: true,
       message: "Password changed successfully",
     })
-  } catch (error) {
+  } catch {
     // Failed to change password
     return NextResponse.json(
       { error: "Failed to change password" },

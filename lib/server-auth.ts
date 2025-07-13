@@ -37,7 +37,7 @@ export async function verifyToken(token: string): Promise<AuthUser | null> {
     }
     
     return decoded.user
-  } catch (error) {
+  } catch {
     // Token verification failed
     return null
   }

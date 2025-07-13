@@ -156,7 +156,7 @@ export default function DashboardPage() {
       }
       
       setStats(processedData)
-    } catch (error) {
+    } catch {
       // Failed to fetch dashboard stats
       toast({
         title: "Error",
@@ -174,7 +174,7 @@ export default function DashboardPage() {
       }
       const data = await response.json()
       setProfileData(data)
-    } catch (error) {
+    } catch {
       // Failed to fetch profile data
       toast({
         title: "Error",
@@ -195,7 +195,7 @@ export default function DashboardPage() {
       // Use the same data as the calendar
       const chartData = data.dailyEarnings || []
       setDailyChartData(chartData)
-    } catch (error) {
+    } catch {
       // Failed to fetch chart data
       toast({
         title: "Error",
@@ -216,7 +216,7 @@ export default function DashboardPage() {
       
       const data = await response.json();
       setDailyEarnings(data.dailyEarnings || []);
-    } catch (error) {
+    } catch {
       // Failed to fetch daily earnings
       toast({
         title: "Error",

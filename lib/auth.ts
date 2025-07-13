@@ -70,7 +70,7 @@ export const authUtils = {
       }
       
       return decoded.user
-    } catch (error) {
+    } catch {
       // Token verification failed
       return null
     }

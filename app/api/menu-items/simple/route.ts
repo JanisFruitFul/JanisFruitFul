@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       data: menuItem
     }, { status: 201 });
     
-  } catch (error) {
+  } catch {
     // Error creating menu item
     return NextResponse.json(
       { error: "Failed to create menu item" },

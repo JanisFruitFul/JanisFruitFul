@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
             rewards: categoryProgress,
           },
         });
-      } catch (timeoutError) {
+      } catch {
         // Database timeout, returning error
         return NextResponse.json(
           { error: "Database connection timeout" },
@@ -190,14 +190,14 @@ export async function GET(req: NextRequest) {
           readyRewards: totalReadyRewards,
         },
       })
-    } catch (timeoutError) {
+    } catch {
       // Database timeout, returning error
       return NextResponse.json(
         { error: "Database connection timeout" },
         { status: 500 }
       )
     }
-  } catch (error) {
+  } catch {
     // Failed to fetch reward data
     return NextResponse.json(
       { error: "Failed to fetch reward data" },

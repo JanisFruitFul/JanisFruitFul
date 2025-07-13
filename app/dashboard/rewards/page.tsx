@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from "react";
 import { CustomerProgressModal } from "@/components/customer-progress-modal";
 import { toast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface CategoryReward {
   category: string;
@@ -59,6 +60,9 @@ export default function RewardsPage() {
   const [showStats, setShowStats] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showClaimedModal, setShowClaimedModal] = useState(false);
+  const [claimedCategory, setClaimedCategory] = useState<string | null>(null);
+  const [claimedCustomer, setClaimedCustomer] = useState<RewardCustomer | null>(null);
 
   useEffect(() => {
     fetchRewards();
@@ -89,7 +93,7 @@ export default function RewardsPage() {
         upcomingRewards: 0,
         readyRewards: 0,
       });
-    } catch (error) {
+    } catch {
       // Failed to fetch reward data
       toast({
         title: "Error",
@@ -138,9 +142,17 @@ See you at Jani's Fruitful! 😊`;
         return
       }
 
+      // Close the progress modal immediately
+      closeCustomerModal();
+
+      // Show claimed modal
+      setClaimedCategory(category.category);
+      setClaimedCustomer(customer);
+      setShowClaimedModal(true);
+
       // Refresh the rewards data
       await fetchRewards();
-    } catch (error) {
+    } catch {
       // Error claiming reward
       toast({
         title: "Error",
@@ -397,6 +409,24 @@ See you at Jani's Fruitful! 😊`;
         onClaimReward={claimReward}
         onSendWhatsApp={sendWhatsAppReminder}
       />
+
+      {/* Reward Claimed Modal */}
+      <Dialog open={showClaimedModal} onOpenChange={setShowClaimedModal}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogTitle>🎉 Reward Claimed!</DialogTitle>
+          <DialogDescription>
+            {claimedCustomer && claimedCategory && (
+              <div>
+                <div className="my-2">
+                  <span className="font-semibold">{claimedCustomer.name}</span> has claimed a free <span className="font-semibold">{claimedCategory}</span>!
+                </div>
+                <div className="text-2xl my-2">🥳</div>
+              </div>
+            )}
+          </DialogDescription>
+          <Button onClick={() => setShowClaimedModal(false)} className="mt-4 w-full">Close</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

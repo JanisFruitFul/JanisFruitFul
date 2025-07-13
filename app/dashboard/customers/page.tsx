@@ -70,7 +70,7 @@ export default function CustomersPage() {
       const data = await response.json()
       // Ensure data is an array
       setCustomers(Array.isArray(data) ? data : [])
-    } catch (error) {
+    } catch {
       // Failed to fetch customers
       toast({
         title: "Error",

@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
       transactions: filteredTransactions
     })
 
-  } catch (error) {
+  } catch {
     // Failed to fetch earnings data
     return NextResponse.json(
       { error: "Failed to fetch earnings data" },

@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       rewardsEarned,
       recentCustomers,
     })
-  } catch (error) {
+  } catch {
     // Failed to fetch dashboard stats
     return NextResponse.json(
       { error: "Failed to fetch dashboard stats" },

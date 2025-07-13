@@ -113,7 +113,7 @@ export default function CustomerItemsPage() {
         })
         setMenuItems([]);
       }
-    } catch (err) {
+    } catch {
       // Error fetching menu items
       toast({
         title: "Error",

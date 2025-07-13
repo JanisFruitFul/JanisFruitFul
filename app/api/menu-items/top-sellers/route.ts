@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       data: topSellers
     });
     
-  } catch (error) {
+  } catch {
     // Error fetching top sellers
     return NextResponse.json([])
   }

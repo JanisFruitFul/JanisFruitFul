@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     });
     
     return NextResponse.json(menuItem, { status: 201 });
-  } catch (error) {
+  } catch {
     // Error creating menu item
     return NextResponse.json(
       { error: "Failed to create menu item" },
@@ -115,7 +115,7 @@ export async function GET() {
     const menuItems = await MenuItem.find({}).sort({ createdAt: -1 });
     
     return NextResponse.json(menuItems);
-  } catch (error) {
+  } catch {
     // Error fetching menu items
     return NextResponse.json(
       { error: "Failed to fetch menu items" },

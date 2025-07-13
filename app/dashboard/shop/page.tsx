@@ -82,15 +82,7 @@ export default function ShopPage() {
     setFilteredItems(filtered)
   }, [menuItems, searchTerm, selectedCategory, sortBy])
 
-  useEffect(() => {
-    fetchMenuItems()
-  }, [])
-
-  useEffect(() => {
-    filterAndSortItems()
-  }, [filterAndSortItems])
-
-  const fetchMenuItems = async () => {
+  const fetchMenuItems = useCallback(async () => {
     try {
       const response = await fetch(getApiUrl('api/menu'))
       if (response.ok) {
@@ -109,7 +101,7 @@ export default function ShopPage() {
           variant: "destructive",
         })
       }
-    } catch (err) {
+    } catch {
       // Error fetching menu items
       toast({
         title: "Error",
@@ -117,7 +109,15 @@ export default function ShopPage() {
         variant: "destructive",
       })
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchMenuItems()
+  }, [fetchMenuItems])
+
+  useEffect(() => {
+    filterAndSortItems()
+  }, [filterAndSortItems])
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -195,7 +195,7 @@ export default function ShopPage() {
       if (!response.ok) {
         throw new Error("Failed to process order")
       }
-    } catch (err) {
+    } catch {
       // Error processing order
       toast({
         title: "Error",
@@ -235,7 +235,7 @@ export default function ShopPage() {
       setCustomerPhone("")
       clearCart()
       setShowCheckout(false)
-    } catch (err) {
+    } catch {
       // Error processing order
       toast({
         title: "Error",

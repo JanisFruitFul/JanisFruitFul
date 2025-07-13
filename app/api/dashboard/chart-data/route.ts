@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json(chartData)
-  } catch (error) {
+  } catch {
     // Failed to fetch chart data
     return NextResponse.json(
       { error: "Failed to fetch chart data" },

@@ -33,7 +33,7 @@ export async function GET() {
       testItemFound: !!foundItem,
     });
     
-  } catch (error) {
+  } catch {
     // Test failed
     return NextResponse.json(
       { error: "Test failed" },

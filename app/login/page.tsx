@@ -86,7 +86,7 @@ export default function LoginPage() {
     if (recaptchaElement && recaptchaElement.reset) {
       try {
         recaptchaElement.reset()
-      } catch (error) {
+      } catch {
         // Error resetting reCAPTCHA
       }
     }
@@ -162,7 +162,7 @@ export default function LoginPage() {
         // Reset captcha on failed login
         resetCaptcha()
       }
-    } catch (error) {
+    } catch {
       // Login error
       toast({
         title: "Login Failed",

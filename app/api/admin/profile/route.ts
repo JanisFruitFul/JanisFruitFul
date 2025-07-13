@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         rewardsGiven,
       },
     })
-  } catch (error) {
+  } catch {
     // Failed to fetch profile data
     return NextResponse.json(
       { error: "Failed to fetch profile data" },
@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
       message: "Profile updated successfully",
       user: { username: admin.username, email: admin.email },
     })
-  } catch (error) {
+  } catch {
     // Failed to update profile
     return NextResponse.json(
       { error: "Failed to update profile" },

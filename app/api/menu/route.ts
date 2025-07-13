@@ -16,7 +16,7 @@ export async function GET() {
     const menuItems = await MenuItem.find({}).sort({ category: 1, name: 1 })
 
     return NextResponse.json(menuItems)
-  } catch (error) {
+  } catch {
     // Failed to fetch menu items
     return NextResponse.json(
       { error: "Failed to fetch menu items" },
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       message: "Menu item created successfully",
       menuItem,
     })
-  } catch (error) {
+  } catch {
     // Failed to create menu item
     return NextResponse.json(
       { error: "Failed to create menu item" },

@@ -28,7 +28,7 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
 
     const data = await response.json()
     return data.success === true
-  } catch (error) {
+  } catch {
     return false
   }
 }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     })
 
     return response
-  } catch (error) {
+  } catch {
     // Login error
     return NextResponse.json(
       { error: "Login failed" },
