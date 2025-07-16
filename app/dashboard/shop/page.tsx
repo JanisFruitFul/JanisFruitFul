@@ -11,9 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getApiUrl } from "@/lib/config";
-import { Check, Minus, Plus, Search, ShoppingCart, X } from "lucide-react";
+import { Check, Minus, Plus, Search, ShoppingCart, X, User2 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface MenuItem {
   _id: string
@@ -44,6 +44,10 @@ export default function ShopPage() {
   const [sortBy, setSortBy] = useState<string>("name")
   const [dynamicCategories, setDynamicCategories] = useState<string[]>([])
   const { toast } = useToast()
+  const [allCustomers, setAllCustomers] = useState<{ name: string; phone: string }[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = useState<{ name: string; phone: string }[]>([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   // Combine default and dynamic categories, removing duplicates
   const categories = [...new Set([...defaultCategories, ...dynamicCategories])]
@@ -118,6 +122,34 @@ export default function ShopPage() {
   useEffect(() => {
     filterAndSortItems()
   }, [filterAndSortItems])
+
+  // Fetch all customers when checkout modal opens
+  useEffect(() => {
+    if (showCheckout) {
+      fetch(getApiUrl("api/customers"))
+        .then((res) => res.json())
+        .then((data: { name: string; phone: string }[]) => {
+          if (Array.isArray(data)) {
+            setAllCustomers(data.map((c) => ({ name: c.name, phone: c.phone })));
+          }
+        });
+    }
+  }, [showCheckout]);
+
+  // Filter customers as phone input changes
+  useEffect(() => {
+    if (customerPhone.length >= 2) {
+      const matches = allCustomers.filter(
+        (c) =>
+          c.phone.includes(customerPhone) ||
+          c.name.toLowerCase().includes(customerPhone.toLowerCase())
+      );
+      setFilteredCustomers(matches);
+      setShowCustomerDropdown(matches.length > 0);
+    } else {
+      setShowCustomerDropdown(false);
+    }
+  }, [customerPhone, allCustomers]);
 
   const addToCart = (item: MenuItem) => {
     setCart((prevCart) => {
@@ -601,7 +633,7 @@ export default function ShopPage() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <Label htmlFor="customerPhone">Customer Phone</Label>
                 <Input
                   id="customerPhone"
@@ -609,7 +641,47 @@ export default function ShopPage() {
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   required
+                  ref={phoneInputRef}
+                  onFocus={() => {
+                    if (filteredCustomers.length > 0) setShowCustomerDropdown(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowCustomerDropdown(false), 150);
+                  }}
                 />
+                {/* Dropdown for existing customers */}
+                {showCustomerDropdown && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto max-h-60 animate-fade-in">
+                    {filteredCustomers.length > 0 ? (
+                      <>
+                        <div className="px-4 py-2 text-xs text-gray-500 border-b bg-gray-50 rounded-t-xl font-semibold tracking-wide">
+                          Existing Customers
+                        </div>
+                        {filteredCustomers.map((c, idx) => (
+                          <div
+                            key={c.phone}
+                            className="flex items-center gap-3 px-4 py-2 cursor-pointer transition-colors duration-100 hover:bg-emerald-100/80 focus:bg-emerald-200 border-b last:border-b-0 group"
+                            style={{ borderTopLeftRadius: idx === 0 ? '0.75rem' : undefined, borderTopRightRadius: idx === 0 ? '0.75rem' : undefined, borderBottomLeftRadius: idx === filteredCustomers.length - 1 ? '0.75rem' : undefined, borderBottomRightRadius: idx === filteredCustomers.length - 1 ? '0.75rem' : undefined }}
+                            onMouseDown={() => {
+                              setCustomerName(c.name);
+                              setCustomerPhone(c.phone);
+                              setShowCustomerDropdown(false);
+                              phoneInputRef.current?.blur();
+                            }}
+                          >
+                            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200 group-hover:text-emerald-900 transition-colors">
+                              <User2 className="w-4 h-4" />
+                            </span>
+                            <span className="font-medium text-gray-900">{c.name}</span>
+                            <span className="ml-auto text-gray-500 text-xs font-mono tracking-wide">{c.phone}</span>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="px-4 py-3 text-center text-sm text-gray-400">No matches found</div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
