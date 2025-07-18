@@ -48,6 +48,9 @@ export default function ShopPage() {
   const [filteredCustomers, setFilteredCustomers] = useState<{ name: string; phone: string }[]>([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerName, setNewCustomerName] = useState("");
 
   // Combine default and dynamic categories, removing duplicates
   const categories = [...new Set([...defaultCategories, ...dynamicCategories])]
@@ -237,47 +240,53 @@ export default function ShopPage() {
     }
   }
 
+  const isCustomerNew = (name: string, phone: string) => {
+    return !allCustomers.some(c => c.phone === phone);
+  };
+
   const handleSubmitOrder = async () => {
     if (!customerName || !customerPhone) {
       toast({
         title: "Missing information",
         description: "Please fill in customer name and phone number",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
-
-    setIsProcessing(true)
-
+    setIsProcessing(true);
+    const wasNewCustomer = isCustomerNew(customerName, customerPhone);
     try {
       // Process each item in the cart
       for (const cartItem of cart) {
         for (let i = 0; i < cartItem.quantity; i++) {
-          await handlePurchase(cartItem)
+          await handlePurchase(cartItem);
         }
       }
-
       toast({
         title: "Order processed successfully!",
         description: `${getTotalItems()} items added for ${customerName}`,
-      })
-
+      });
+      // Show WhatsApp welcome modal if new customer
+      if (wasNewCustomer) {
+        setNewCustomerPhone(customerPhone);
+        setNewCustomerName(customerName);
+        setShowWelcomeModal(true);
+      }
       // Reset form and cart
-      setCustomerName("")
-      setCustomerPhone("")
-      clearCart()
-      setShowCheckout(false)
+      setCustomerName("");
+      setCustomerPhone("");
+      clearCart();
+      setShowCheckout(false);
     } catch {
-      // Error processing order
       toast({
         title: "Error",
         description: "Failed to process order",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   const groupedItems = categories.reduce(
     (acc, category) => {
@@ -710,6 +719,39 @@ export default function ShopPage() {
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp Welcome Modal */}
+      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send WhatsApp Welcome</DialogTitle>
+            <DialogDescription>
+              Send a welcome message to the new customer via WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-center">
+            <div className="text-lg font-semibold">{newCustomerName}</div>
+            <div className="text-gray-500">{newCustomerPhone}</div>
+            <a
+              href={`https://wa.me/91${newCustomerPhone}?text=${encodeURIComponent(
+                `Hi ${newCustomerName}, welcome to Janis FruitFul! Thank you for your first purchase. We hope you enjoy your experience!`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg mt-2"
+              onClick={() => setShowWelcomeModal(false)}
+            >
+              Send WhatsApp Message
+            </a>
+            <button
+              className="block w-full mt-2 text-gray-500 hover:text-gray-700 text-sm"
+              onClick={() => setShowWelcomeModal(false)}
+            >
+              Close
+            </button>
           </div>
         </DialogContent>
       </Dialog>

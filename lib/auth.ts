@@ -11,6 +11,7 @@ export interface AuthToken {
 }
 
 import jwt from 'jsonwebtoken'
+import { jwtDecode } from 'jwt-decode'
 
 // JWT secret - should match the backend
 const JWT_SECRET = process.env.JWT_SECRET
@@ -51,28 +52,33 @@ export const authUtils = {
 
   // Verify token and return user data
   verifyToken: async (token: string): Promise<AuthUser | null> => {
-    if (!JWT_SECRET) {
-      if (typeof window === 'undefined') {
-        // On server, this should never happen due to the check above
+    if (typeof window !== 'undefined') {
+      // On client: decode only, do not verify
+      try {
+        const decoded = jwtDecode<AuthToken>(token)
+        // Check if token is expired
+        if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+          return null
+        }
+        return decoded.user
+      } catch {
+        return null
+      }
+    } else {
+      // On server: verify with secret
+      if (!JWT_SECRET) {
         throw new Error('JWT_SECRET is missing on the server')
-      } else {
-        // On client, JWT_SECRET is not available, so skip verification
-        console.warn('JWT_SECRET is not available on the client. Skipping token verification.')
+      }
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as AuthToken
+        // Check if token is expired
+        if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+          return null
+        }
+        return decoded.user
+      } catch {
         return null
       }
-    }
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as AuthToken
-      
-      // Check if token is expired
-      if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-        return null
-      }
-      
-      return decoded.user
-    } catch {
-      // Token verification failed
-      return null
     }
   },
 
