@@ -292,7 +292,7 @@ export default function RewardsPage() {
           )}
 
           {/* Main Content */}
-          {!loading && !error && (
+          {!error && (
             <div className="space-y-8">
               {/* Search Section */}
               <div id="find-rewards" className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-green-100 p-8">
@@ -361,145 +361,154 @@ export default function RewardsPage() {
               {/* Customer Cards Grid - Only show when searching */}
               {activeSearch && (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredCustomers.length > 0 ? (
+                  {loading ? (
+                    // Show skeletons while loading
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className="bg-white/80 rounded-2xl shadow-sm border border-green-100 p-8 animate-pulse">
+                        <div className="w-10 h-10 bg-green-100 rounded-full mb-4" />
+                        <div className="h-4 bg-green-100 rounded w-1/2 mb-2" />
+                        <div className="h-3 bg-green-50 rounded w-1/3 mb-4" />
+                        <div className="h-4 bg-green-50 rounded w-1/4 mb-2" />
+                        <div className="h-4 bg-green-50 rounded w-1/4" />
+                      </div>
+                    ))
+                  ) : filteredCustomers.length > 0 ? (
                     filteredCustomers.map((customer) => (
-                    <Card
-                      key={customer._id}
-                      className="group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-green-100 hover:shadow-xl hover:border-green-200 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
-                      onClick={() => openCustomerModal(customer)}
-                    >
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
-                      <CardHeader className="relative pb-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                              <Users className="h-5 w-5 text-white" />
+                      <Card
+                        key={customer._id}
+                        className="group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-green-100 hover:shadow-xl hover:border-green-200 transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+                        onClick={() => openCustomerModal(customer)}
+                      >
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <CardHeader className="relative pb-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                <Users className="h-5 w-5 text-white" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-green-900 transition-colors">
+                                  {customer.name}
+                                </CardTitle>
+                                <CardDescription className="text-sm text-gray-600 font-medium">
+                                  {customer.phone}
+                                </CardDescription>
+                              </div>
                             </div>
-                            <div>
-                              <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-green-900 transition-colors">
-                                {customer.name}
-                              </CardTitle>
-                              <CardDescription className="text-sm text-gray-600 font-medium">
-                                {customer.phone}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4 text-gray-400 group-hover:text-green-500 transition-colors" />
-                            <span className="text-xs text-gray-400 group-hover:text-green-500 transition-colors">View</span>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      
-                      <CardContent className="relative space-y-4">
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-xs font-medium text-green-700">Total Drinks</span>
-                            </div>
-                            <div className="text-lg font-bold text-green-800">
-                              {customer.totalPaidDrinks}
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-4 w-4 text-gray-400 group-hover:text-green-500 transition-colors" />
+                              <span className="text-xs text-gray-400 group-hover:text-green-500 transition-colors">View</span>
                             </div>
                           </div>
-                          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-3 border border-emerald-100">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                              <span className="text-xs font-medium text-emerald-700">Total Rewards</span>
+                        </CardHeader>
+                        <CardContent className="relative space-y-4">
+                          {/* Stats Row */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-xs font-medium text-green-700">Total Drinks</span>
+                              </div>
+                              <div className="text-lg font-bold text-green-800">
+                                {customer.totalPaidDrinks}
+                              </div>
                             </div>
-                            <div className="text-lg font-bold text-emerald-800">
-                              {customer.totalRewardsEarned}
+                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-3 border border-emerald-100">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                <span className="text-xs font-medium text-emerald-700">Total Rewards</span>
+                              </div>
+                              <div className="text-lg font-bold text-emerald-800">
+                                {customer.totalRewardsEarned}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Categories Section */}
-                        {customer.rewards && customer.rewards.length > 0 ? (
-                          <div className="space-y-3">
-                            <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                              <span className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></span>
-                              Categories
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {customer.rewards.map((category, index) => (
-                                <Badge
-                                  key={index}
-                                  variant="outline"
-                                  className={`text-xs font-medium px-2 py-1 rounded-lg transition-all duration-200 ${
-                                    category.status === "ready"
-                                      ? "border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
-                                      : category.status === "upcoming"
-                                      ? "border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-                                      : "border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100"
-                                  }`}
-                                >
-                                  <span className="mr-1">{getCategoryIcon(category.category)}</span>
-                                  {category.category}
-                                </Badge>
-                              ))}
-                            </div>
-                            
-                            {/* Ready Rewards Alert */}
-                            {customer.rewards.filter(r => r.status === "ready").length > 0 && (
-                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                    <Gift className="h-3 w-3 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-semibold text-green-800">
-                                      {customer.rewards.filter(r => r.status === "ready").length} reward(s) ready!
-                                    </p>
-                                    <p className="text-xs text-green-600">Click to claim</p>
+                          {/* Categories Section */}
+                          {customer.rewards && customer.rewards.length > 0 ? (
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></span>
+                                Categories
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {customer.rewards.map((category, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="outline"
+                                    className={`text-xs font-medium px-2 py-1 rounded-lg transition-all duration-200 ${
+                                      category.status === "ready"
+                                        ? "border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
+                                        : category.status === "upcoming"
+                                        ? "border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
+                                        : "border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100"
+                                    }`}
+                                  >
+                                    <span className="mr-1">{getCategoryIcon(category.category)}</span>
+                                    {category.category}
+                                  </Badge>
+                                ))}
+                              </div>
+                              
+                              {/* Ready Rewards Alert */}
+                              {customer.rewards.filter(r => r.status === "ready").length > 0 && (
+                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                      <Gift className="h-3 w-3 text-white" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-green-800">
+                                        {customer.rewards.filter(r => r.status === "ready").length} reward(s) ready!
+                                      </p>
+                                      <p className="text-xs text-green-600">Click to claim</p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <Coffee className="h-4 w-4 text-gray-500" />
+                              )}
                             </div>
-                            <p className="text-sm text-gray-500 font-medium">No category rewards yet</p>
-                            <p className="text-xs text-gray-400 mt-1">Start ordering to earn rewards</p>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="text-center py-6 bg-gray-50 rounded-xl border border-gray-100">
+                              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <Coffee className="h-4 w-4 text-gray-500" />
+                              </div>
+                              <p className="text-sm font-medium text-gray-500">No category rewards yet</p>
+                              <p className="text-xs text-gray-400 mt-1">Start ordering to earn rewards</p>
+                            </div>
+                          )}
 
-                        {/* Action Hint */}
-                        <div className="pt-3 border-t border-green-100">
-                          <div className="flex items-center justify-center gap-2 text-xs text-gray-500 group-hover:text-green-600 transition-colors">
-                            <Eye className="h-3 w-3" />
-                            <span>Click to view detailed progress</span>
+                          {/* Action Hint */}
+                          <div className="pt-3 border-t border-green-100">
+                            <div className="flex items-center justify-center gap-2 text-xs text-gray-500 group-hover:text-green-600 transition-colors">
+                              <Eye className="h-3 w-3" />
+                              <span>Click to view detailed progress</span>
+                            </div>
                           </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="col-span-full">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-green-100 p-12 text-center">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Search className="h-8 w-8 text-green-400" />
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : activeSearch ? (
-                  <div className="col-span-full">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-green-100 p-12 text-center">
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Search className="h-8 w-8 text-green-400" />
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No customers found</h3>
+                        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                          No customers found matching &ldquo;{activeSearch}&rdquo;. Try searching with a different mobile number.
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={clearSearch}
+                          className="flex items-center gap-2 mx-auto bg-white hover:bg-green-50 border-green-200"
+                        >
+                          <X className="h-4 w-4" />
+                          Clear search
+                        </Button>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No customers found</h3>
-                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        No customers found matching &ldquo;{activeSearch}&rdquo;. Try searching with a different mobile number.
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={clearSearch}
-                        className="flex items-center gap-2 mx-auto bg-white hover:bg-green-50 border-green-200"
-                      >
-                        <X className="h-4 w-4" />
-                        Clear search
-                      </Button>
                     </div>
-                  </div>
-                ) : null}
+                  )}
                 </div>
               )}
             </div>

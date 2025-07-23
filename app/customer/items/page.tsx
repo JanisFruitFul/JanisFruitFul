@@ -79,6 +79,7 @@ export default function CustomerItemsPage() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showApologyModal, setShowApologyModal] = useState(false);
+  const [serverBusy, setServerBusy] = useState(false);
 
   useEffect(() => {
     fetchMenuItems();
@@ -89,6 +90,16 @@ export default function CustomerItemsPage() {
     }
   }, []);
 
+  // Reload after 15 seconds if server is busy
+  useEffect(() => {
+    if (serverBusy) {
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 20000);
+      return () => clearTimeout(timer);
+    }
+  }, [serverBusy]);
+
   const handleCloseApologyModal = () => {
     setShowApologyModal(false);
     localStorage.setItem('hasSeenApologyModal', 'true');
@@ -97,6 +108,7 @@ export default function CustomerItemsPage() {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
+      setServerBusy(false);
       
       const response = await fetch(getApiUrl('api/menu'));
       
@@ -112,6 +124,7 @@ export default function CustomerItemsPage() {
           variant: "destructive",
         })
         setMenuItems([]);
+        setServerBusy(true);
       }
     } catch {
       // Error fetching menu items
@@ -121,6 +134,7 @@ export default function CustomerItemsPage() {
         variant: "destructive",
       })
       setMenuItems([]);
+      setServerBusy(true);
     } finally {
       setLoading(false);
     }
@@ -373,7 +387,26 @@ export default function CustomerItemsPage() {
           ref={menuRef}
           className={`transition-all duration-1000 ${menuVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
         >
-        {loading ? (
+        {serverBusy ? (
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-12 text-center">
+              <Coffee className="h-16 w-16 text-orange-400 mx-auto mb-4 animate-bounce" />
+              <h3 className="text-2xl font-bold text-orange-700 mb-2">Server is busy</h3>
+              <p className="text-gray-700 text-lg mb-4">
+                Our kitchen is a bit busy right now!<br />
+                Please wait while we fetch the delicious drinks for you.<br />
+                The page will reload automatically in 20 seconds.
+              </p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Reload Now
+              </Button>
+            </CardContent>
+          </Card>
+        ) : loading ? (
           <div className="space-y-6">
             {/* Results Summary Skeleton */}
             <div className="flex items-center justify-between">
